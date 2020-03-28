@@ -29,3 +29,32 @@
 ion-content ion-toolbar {
   --background: translucent;
 }
+
+.customDrop {
+  margin: auto;
+  max-width: 30vw;
+  background-color: #b93a84;
+  color: white;
+}
+
+.analizedCard {
+  color: black;
+  max-height: 60%;
+  overflow: auto;
+}
+
+ngx-dropzone-label {
+  color: white;
+}
+
+.inside {
+  color: black !important;
+}
+
+.icon {
+  font-size: 40px;
+}
+
+.whiteCont {
+  background-color: aliceblue;
+}

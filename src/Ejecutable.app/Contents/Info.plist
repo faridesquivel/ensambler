@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BuildMachineOSBuild</key>
+	<string>17G65</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>app_mode_loader</string>
+	<key>CFBundleIconFile</key>
+	<string>app.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.google.Chrome.app.glifoghnfbmnimaagabpdbabbbbadlef</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Ensambladores</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>2020.3.17.37531</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>3987.132</string>
+	<key>CrAppModeShortcutID</key>
+	<string>glifoghnfbmnimaagabpdbabbbbadlef</string>
+	<key>CrAppModeShortcutName</key>
+	<string>Ensambladores</string>
+	<key>CrAppModeShortcutURL</key>
+	<string>https://ensambler2020.web.app/home</string>
+	<key>CrAppModeUserDataDir</key>
+	<string>/Users/faridesquivel/Library/Application Support/Google/Chrome/-/Web Applications/_crx_glifoghnfbmnimaagabpdbabbbbadlef</string>
+	<key>CrBundleIdentifier</key>
+	<string>com.google.Chrome</string>
+	<key>CrBundleVersion</key>
+	<string>80.0.3987.132</string>
+	<key>DTCompiler</key>
+	<string>com.apple.compilers.llvm.clang.1_0</string>
+	<key>DTSDKBuild</key>
+	<string>10.14</string>
+	<key>DTSDKName</key>
+	<string>macosx10.14</string>
+	<key>DTXcode</key>
+	<string>1021</string>
+	<key>DTXcodeBuild</key>
+	<string>10E1001</string>
+	<key>LSEnvironment</key>
+	<dict>
+		<key>MallocNanoZone</key>
+		<string>0</string>
+	</dict>
+	<key>LSHasLocalizedDisplayName</key>
+	<true/>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.10.0</string>
+	<key>NSAppleScriptEnabled</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+</dict>
+</plist>

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { NgxDropzoneModule } from 'ngx-dropzone';
 
 import { HomePage } from './home.page';
 
@@ -11,6 +12,7 @@ import { HomePage } from './home.page';
     CommonModule,
     FormsModule,
     IonicModule,
+    NgxDropzoneModule,
     RouterModule.forChild([
       {
         path: '',
