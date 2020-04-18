@@ -78,6 +78,7 @@ export class HomePage implements OnInit {
               newWord = '';
             } else if (index === String(leftLine).length - 1) {
               newWord += String(leftLine).charAt(index);
+              console.log('Final letter of the line, word is: ', newWord);
               this.allWords.push(newWord);
               newWord = '';
             } else {
@@ -89,11 +90,17 @@ export class HomePage implements OnInit {
           } else {
             if (String(leftLine).charAt(index) === '"') {
               newWord += String(leftLine).charAt(index);
-              this.allWords.push(newWord);
-              newWord = '';
-              mustClose = false;
+              if (String(leftLine).charAt(index + 1) && String(leftLine).charAt(index + 1) === ')') {
+                console.log('The next element is ), current saved words are: ', newWord);
+                mustClose = false;
+              } else {
+                mustClose = false;
+                this.allWords.push(newWord);
+                newWord = '';
+              }
             } else if (index === String(leftLine).length - 1) {
               newWord += String(leftLine).charAt(index);
+              console.log('Will have to push new word since line ended with " activated', newWord);
               this.allWords.push(newWord);
               newWord = '';
             } else {
@@ -220,57 +227,86 @@ export class HomePage implements OnInit {
       }
     }
     if (this.currentSegment !== null) {
+      let commentFound = false;
+      let leftLine = '';
+      for (let index = 0; index < line.length; index++) {
+        if (line.charAt(index) !== ';') {
+          if (commentFound === false) {
+            leftLine += line.charAt(index);
+          }
+        } else if (line.charAt(index) === ';') {
+          commentFound = true;
+        }
+      }
       if (this.currentSegment === 'data segment') {
-        return this.analizaDataSegment(line);
+        return this.analizaDataSegment(leftLine);
       } else if (this.currentSegment === 'stack segment') {
-        return this.analizaStackSegment(line);
+        return this.analizaStackSegment(leftLine);
       } else if (this.currentSegment === 'code segment') {
-        return this.analizaCodeSegment(line);
+        return this.analizaCodeSegment(leftLine);
       }
     }
     return line + ' es correcta';
   }
 
-  analizeWords(line) {
-    line.trim();
-    if (line.valueOf() === '') {
+  analizeWords(word) {
+    word.trim();
+    if (word.valueOf() === '') {
       return;
     }
-    const isComment = line.charAt(0) === ';';
+    const isComment = word.charAt(0) === ';';
     if (isComment) {
       return;
     }
-    const isCompound = (line.valueOf() === 'data segment')
-    || (line.valueOf() === 'code segment')
-    || (line.valueOf() === 'stack segment');
+    const isCompound = (word.valueOf() === 'data segment')
+    || (word.valueOf() === 'code segment')
+    || (word.valueOf() === 'stack segment');
     if (isCompound) {
       if (this.mustEnd === true) {
-        return line + ' Debe de contener un ends antes de abrir un nuevo segmento';
+        return word + ' Debe de contener un ends antes de abrir un nuevo segmento';
       } else {
         this.mustEnd = true;
-        this.currentSegment = line.valueOf();
-        return line + ' es un pseudónimo';
+        this.currentSegment = word.valueOf();
+        return word + ' es un pseudónimo';
       }
     }
-    const isEnd = line.valueOf() === 'ends';
+    const isEnd = word.valueOf() === 'ends';
     if (isEnd) {
       if (this.mustEnd === true) {
         this.mustEnd = false;
-        return line + ' fin de segmento';
+        return word + ' fin de segmento';
       } else {
-        return line + ' LÍNEA INVÁLIDA, para usar fin de segmento se necesita iniciar un segmento';
+        return word + ' LÍNEA INVÁLIDA, para usar fin de segmento se necesita iniciar un segmento';
       }
     }
-    if (this.currentSegment !== null) {
-      if (this.currentSegment === 'data segment') {
-        return this.analizaDataSegmentWords(line);
-      } else if (this.currentSegment === 'stack segment') {
-        return this.analizaStackSegmentWords(line);
-      } else if (this.currentSegment === 'code segment') {
-        return this.analizaCodeSegmentWords(line);
+    return this.analizeWordWithRegex(word);
+  }
+
+  analizeWordWithRegex(word) {
+    const isDupWithByte = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5])\)\s*$/gm.test(word);
+    if (isDupWithByte === true) return word + ' es un dup o elemento compuesto con byte';
+    const isDupWithChar = /dup\(("[^"]*"|'[^']*')\)\s*$/gm.test(word);
+    if (isDupWithChar === true) return word + ' es un dup o elemento compuesto con caracter';
+    const isDupWithHexa = /dup\((\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*|^0x[0-9a-fA-F]{1,4})\)\s*$/gm.test(word);
+    if (isDupWithHexa === true) return word + ' es un dup o elemento compuesto con hexadecimal';
+    const isSize = /(db|dw|equ)/gm.test(word);
+    if (isSize === true) return word + ' es un símbolo de tamaño';
+    const isVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(word);
+    if (isVar === true) return word + ' es un símbolo de variable';
+    const isConstNumByteNegative = /^[-+]?[01]?[0-2]?[0-8]\s*$/gm.test(word);
+    if (isConstNumByteNegative === true) return word + ' es una constante numérica';
+    const isConstNumByte = /^[0-2]?[0-5]?[0-5]\s*$/gm.test(word);
+    if (isConstNumByte === true) return word + ' es una constante numérica';
+    const isConstNumHexa = /^(\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*$|^0x[0-9a-fA-F]{1,4}$)/gm.test(word);
+    if (isConstNumHexa === true) {
+      if (parseInt(word, 16) > 255) {
+        return word + ' es una constante numérica inválida';
       }
+      return word + ' es una constante numérica';
     }
-    return line + ' es correcta';
+    const isConstString = /"[^"]*"\s*$|'[^']*'\s*$/gm.test(word);
+    if (isConstString === true) return word + ' es una constante caractér';
+    return word + ' elemento inválido';
   }
 
   analizaCodeSegment(line) {
@@ -286,29 +322,23 @@ export class HomePage implements OnInit {
   }
 
   analizaDataSegment(line) {
-    const regex = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}\s(db\s(dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$|"[^"]*"|'[^']*'|[-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|(?:[a-fA-F0–9]{6}|[a-fA-F0–9]{3}))\s*?$|dw\s[a-z]*|equ\s[a-z]*)/gm.test(line);
+    const regex = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}\s(db\s(dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$|"[^"]*"|'[^']*'|[-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|(?:[a-fA-F0–9]{6}|[a-fA-F0–9]{3}))\s*?$|dw\s(("[^"]*"|'[^']*')|("[^"]*"|'[^']*')\sdup\(("[^"]*"|'[^']*')\))\s*?$|equ\s("[^"]*"|'[^']*')\s*$)/gm.test(line);
     console.log('Regex is: ', regex, ' for line: ', line);
     if (regex === false) {
       return this.analizeLineWithDataSegment(line);
     }
-    return regex === true ? (line + ' LÍNEA VÁLIDA') : (line + ' LÍNEA INVÁLIDA');
-  }
-
-  analizaDataSegmentWords(line) {
-    const regex = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}\s(db\s(dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$|"[^"]*"|'[^']*'|[-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|(?:[a-fA-F0–9]{6}|[a-fA-F0–9]{3}))\s*?$|dw\s[a-z]*|equ\s[a-z]*)/gm.test(line);
-    console.log('Regex is: ', regex, ' for line: ', line);
-    if (regex === false) {
-      return this.analizeLineWithDataSegment(line);
-    }
-    return regex === true ? (line + ' PALABRA VÁLIDA') : (line + ' PALABRA INVÁLIDA');
+    return line + ' LÍNEA VÁLIDA';
   }
 
   analizeLineWithDataSegment(line) {
-    const wordsInLine = line.trim().split(/\s/g);
+    const wordsInLine = line.trim().split(/\s+/g);
+    console.log('WORDS IN LINEFOR SYNTATIC are: ', wordsInLine);
+
+    const badVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(wordsInLine[0]);
+    const badSize = /(db|dw|equ)$/gm.test(wordsInLine[1]);
+    const badConst = /^"[^"]*"\s*$|^'[^']*'\s*$|^[-+]?[01]?[0-2]?[0-8]\s*$|^[0-2]?[0-5]?[0-5]\s*$|^\b([a-fA-F0–9]{6}|^[a-fA-F0–9]{3})\b\s*$/gm.test(wordsInLine[2]);
+
     if (wordsInLine.length === 3) {
-      const badVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}/gm.test(wordsInLine[0]);
-      const badSize = /(db|dw|equ)/gm.test(wordsInLine[1]);
-      const badConst = /("[^"]*")\s*$|"[^"]*"\s*$|'[^']*'\s*$|[-+]?[01]?[0-2]?[0-8]\s*$|[0-2]?[0-5]?[0-5]\s*$|\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3})\b\s*$/gm.test(wordsInLine[2]);
       console.log('After reviewing ', wordsInLine, ' barVar, barSize and badConst are:', badVar, badSize, badConst);
       if (badVar === false) {
         return line + ' Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
@@ -318,9 +348,6 @@ export class HomePage implements OnInit {
         return line + ' Error en: ' + wordsInLine[2] + ', constante inválida';
       }
     } else if (wordsInLine.length === 4) {
-      const badVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}/gm.test(wordsInLine[0]);
-      const badSize = /(db|dw|equ)/gm.test(wordsInLine[1]);
-      const badConst = /"[^"]*"\s*$|'[^']*'\s*$|[-+]?[01]?[0-2]?[0-8]\s*$|[0-2]?[0-5]?[0-5]\s*$|\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3})\b\s*$/gm.test(wordsInLine[2]);
       const badDup = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
       console.log('After reviewing ', wordsInLine, ' barVar, barSize, badConst and badDup are:', badVar, badSize, badConst, badDup);
       if (badVar === false) {
@@ -333,17 +360,19 @@ export class HomePage implements OnInit {
         return line + ' Error en: ' + wordsInLine[3] + ', DUP inválida';
       }
     } else if (wordsInLine.length > 4) {
-      const badVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}/gm.test(wordsInLine[0]);
-      const badSize = /(db|dw|equ)/gm.test(wordsInLine[1]);
-      const badConst = /"[^"]*"\s*$|'[^']*'\s*$|[-+]?[01]?[0-2]?[0-8]\s*$|[0-2]?[0-5]?[0-5]\s*$|\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3})\b\s*$/gm.test(wordsInLine[2]);
+      const badDup = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
+      console.log('After reviewing ', wordsInLine, ' barVar, barSize, badConst and badDup are:', badVar, badSize, badConst, badDup);
       if (badVar === false) {
         return line + ' Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
       } else if (badSize === false) {
         return line + ' Error en: ' + wordsInLine[1] + ', el tamaño es inválido';
       } else if (badConst === false) {
         return line + ' Error en: ' + wordsInLine[2] + ', constante inválida';
+      } else if (badDup === false) {
+        return line + ' Error en: ' + wordsInLine[3] + ', DUP inválida';
       }
     }
+
     return line + ' LÍNEA INVÁLIDA';
   }
 
