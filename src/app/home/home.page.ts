@@ -27,6 +27,9 @@ export class HomePage implements OnInit {
     'jnle',
     'ja'
   ];
+  registros = ['AX', 'BX', 'CX', 'DX', 'AH', 'AL', 'BL', 'BH', 'CH', 'CL', 'DH', 'DL', 'DI', 'SI', 'BP', 'SP'];
+  sRegs = ['DS', 'ES', 'SS', 'CS'];
+
   constructor() {}
 
   ngOnInit() {
@@ -155,47 +158,6 @@ export class HomePage implements OnInit {
     return null;
   }
 
-  analizeByWords(line) {
-    line.trim();
-    if (line.valueOf() === '') {
-      return;
-    }
-    const isComment = line.charAt(0) === ';';
-    if (isComment) {
-      return;
-    }
-    const isCompound = (line.valueOf() === 'data segment')
-    || (line.valueOf() === 'code segment')
-    || (line.valueOf() === 'stack segment');
-    if (isCompound) {
-      if (this.mustEnd === true) {
-        return line + ' Debe de contener un ends antes de abrir un nuevo segmento';
-      } else {
-        this.mustEnd = true;
-        this.currentSegment = line.valueOf();
-        return line + ' inicio de segmento';
-      }
-    }
-    const isEnd = line.valueOf() === 'ends';
-    if (isEnd) {
-      if (this.mustEnd === true) {
-        this.mustEnd = false;
-        return line + ' fin de segmento';
-      } else {
-        return line + ' LÍNEA INVÁLIDA, para usar fin de segmento se necesita iniciar un segmento';
-      }
-    }
-    if (this.currentSegment !== null) {
-      if (this.currentSegment === 'data segment') {
-        return this.analizaDataSegment(line);
-      } else if (this.currentSegment === 'stack segment') {
-        return this.analizaStackSegment(line);
-      } else if (this.currentSegment === 'code segment') {
-        return this.analizaCodeSegment(line);
-      }
-    }
-  }
-
   analizeLine(line) {
     line.trim();
     if (line.valueOf() === '') {
@@ -279,7 +241,22 @@ export class HomePage implements OnInit {
         return word + ' LÍNEA INVÁLIDA, para usar fin de segmento se necesita iniciar un segmento';
       }
     }
-    return this.analizeWordWithRegex(word);
+    if (this.currentSegment !== null) {
+      if (this.currentSegment === 'code segment') {
+        if (String(word).charAt(word.length - 1) === ',') {
+          let newWord = '';
+          for (let index = 0; index < word.length; index++) {
+            if (index !== (word.length - 1)) {
+              newWord += String(word).charAt(index);
+            }
+          }
+          return this.analizeCodeSegmentWord(newWord);
+        }
+        return this.analizeCodeSegmentWord(word);
+      } else {
+        return this.analizeWordWithRegex(word);
+      }
+    }
   }
 
   analizeWordWithRegex(word) {
@@ -315,10 +292,43 @@ export class HomePage implements OnInit {
     return line + ' LÍNEA VÁLIDA';
   }
 
-  analizaCodeSegmentWords(line) {
+  analizeCodeSegmentWord(word) {
     // const regex = line.matches("[a-zA-Z][a-zA-Z]+\\s(db|dw|equ),*\\s[A-Z][a-zA-Z]*");
-
-    return line + ' LÍNEA VÁLIDA';
+    if (this.reservedWords.includes(word)) {
+      return word + ' es una palabra reservada';
+    }
+    if (this.registros.includes(word.toUpperCase())) {
+      return word + ' es un REG';
+    }
+    if (this.sRegs.includes(word.toUpperCase())) {
+      return word + ' es un SREG';
+    }
+    const isMemoryT1 = /^(\[BX \+ SI( \+ d8)?\]|\[BX \+ DI( \+ d8)?\]|\[BP \+ SI( \+ d8)?\]|\[BP \+ DI( \+ d8)?\])|(\[SI\]|\[DI\]|d16|\[BX\])$/gm.test(word);
+    if (isMemoryT1) {
+      return word + ' es una referencia de memoria';
+    }
+    const isMemoryT2 = /^(\[BX \+ SI( \+ d16)?\]|\[BX \+ DI( \+ d16)?\]|\[BP \+ SI( \+ d16)?\]|\[BP \+ DI( \+ d16)?\])|(\[SI( \+ (d8|d16))\]|\[DI( \+ (d8|d16))\]|\[BP( \+ (d8|d16))\]|\[BX( \+ (d8|d16))\])$/gm.test(word);
+    if (isMemoryT2) {
+      return word + ' es una referencia de memoria';
+    }
+    const isVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(word);
+    if (isVar) {
+      return word + ' es una variable';
+    }
+    const isConstNumByteNegative = /^[-+]?[01]?[0-2]?[0-8]\s*$/gm.test(word);
+    if (isConstNumByteNegative === true) { return word + ' es un inmediato'; }
+    const isConstNumByte = /^[0-2]?[0-5]?[0-5]\s*$/gm.test(word);
+    if (isConstNumByte === true) { return word + ' es un inmediato'; }
+    const isConstNumHexa = /^(\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*$|^0x[0-9a-fA-F]{1,4}$)/gm.test(word);
+    if (isConstNumHexa === true) {
+      if (parseInt(word, 16) > 255) {
+        return word + ' es un inmediato';
+      }
+      return word + ' es un inmediato';
+    }
+    const isConstString = /"[^"]*"\s*$|'[^']*'\s*$/gm.test(word);
+    if (isConstString === true) { return word + ' es una constante caractér'; }
+    return word + ' es un símbolo desconocido';
   }
 
   analizaDataSegment(line) {
