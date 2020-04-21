@@ -1,18 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, AfterViewChecked } from '@angular/core';
 
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
 })
-export class HomePage implements OnInit {
+export class HomePage implements OnInit, AfterViewChecked {
   allLines: string[] = [];
   allWords: string[] = [];
   currentSegment: string = null;
   lastSegmentInit = '';
+  loading = false;
   files: File[] = [];
   mustEnd = false;
   selectedFile: any;
+  showFileSelector = true;
+  showTable = false;
   reservedWords = [
     'aam',
     'cmpsb',
@@ -31,12 +34,25 @@ export class HomePage implements OnInit {
   sRegs = ['DS', 'ES', 'SS', 'CS'];
   table = [];
 
-  constructor() {}
+  constructor(private cdRef: ChangeDetectorRef) {}
 
   ngOnInit() {
   }
 
+  ngAfterViewChecked() {
+    this.cdRef.detectChanges();
+  }
+
+  onShowFileSelectorChange() {
+    this.showFileSelector = !this.showFileSelector;
+  }
+
+  onShowTableChange() {
+    this.showTable = !this.showTable;
+  }
+
   onSelect(event) {
+    this.loading = true;
     console.log(event);
     this.files.push(...event.addedFiles);
     const file = this.files[0];
@@ -120,11 +136,24 @@ export class HomePage implements OnInit {
     };
 
     reader.readAsText(file);
+    this.showFileSelector = false;
+    this.showTable = true;
+    this.loading = false;
   }
 
   onRemove(event) {
     console.log(event);
     this.files.splice(this.files.indexOf(event), 1);
+  }
+
+  contains(obj) {
+    let contains = false;
+    for (let index = 0; index < this.table.length; index++) {
+      if (this.table[index].symbol === obj.symbol) {
+        contains = true;
+      }
+    }
+    return contains;
   }
 
   analizeWord(word) {
@@ -226,7 +255,7 @@ export class HomePage implements OnInit {
     || (word.valueOf() === 'stack segment');
     if (isCompound) {
       if (this.mustEnd === true) {
-        return word + ' Debe de contener un ends antes de abrir un nuevo segmento';
+        return word + ' ends';
       } else {
         this.mustEnd = true;
         this.currentSegment = word.valueOf();
@@ -349,17 +378,25 @@ export class HomePage implements OnInit {
     console.log('WORDS IN LINEFOR SYNTATIC are: ', wordsInLine);
 
     const badVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(wordsInLine[0]);
-    const badSize = /(db|dw|equ)$/gm.test(wordsInLine[1]);
+    const badSize = /(db|dw)$/gm.test(wordsInLine[1]);
     const badConst = /^"[^"]*"\s*$|^'[^']*'\s*$|^[-+]?[01]?[0-2]?[0-8]\s*$|^[0-2]?[0-5]?[0-5]\s*$|^\b([a-fA-F0–9]{6}|^[a-fA-F0–9]{3})\b\s*$/gm.test(wordsInLine[2]);
-
+    const badEquConst = /("[^"]*"|'[^']*')\s*$/gm.test(wordsInLine[2]);
     if (wordsInLine.length === 3) {
       console.log('After reviewing ', wordsInLine, ' barVar, barSize and badConst are:', badVar, badSize, badConst);
-      if (badVar === false) {
-        return line + ' Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
-      } else if (badSize === false) {
-        return line + ' Error en: ' + wordsInLine[1] + ', el tamaño declarado no es válido';
-      } else if (badConst === false) {
-        return line + ' Error en: ' + wordsInLine[2] + ', constante inválida';
+      if (wordsInLine[1] === 'equ') {
+        if (badVar === false) {
+          return line + ' Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
+        } else if (badEquConst === false) {
+          return line + ' Error en: ' + wordsInLine[2] + ', constante inválida';
+        }
+      } else {
+        if (badVar === false) {
+          return line + ' Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
+        } else if (badSize === false) {
+          return line + ' Error en: ' + wordsInLine[1] + ', el tamaño declarado no es válido';
+        } else if (badConst === false) {
+          return line + ' Error en: ' + wordsInLine[2] + ', constante inválida';
+        }
       }
     } else if (wordsInLine.length === 4) {
       const badDup = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
@@ -392,25 +429,26 @@ export class HomePage implements OnInit {
 
   addDSLineToTable(line) {
     const wordsInLine = line.trim().split(/\s+/g);
-    if (wordsInLine.length === 3) {
-      const symbol = {
+    let symbol = {};
+    if (wordsInLine[1] === 'equ') {
+      symbol = {
         symbol: wordsInLine[0],
         type: 'Constante',
         value: wordsInLine[2],
         size: wordsInLine[1]
       };
-      this.table.push(symbol);
-    } else if (wordsInLine.length === 4) {
-      const symbol = {
+    } else {
+      symbol = {
         symbol: wordsInLine[0],
-        type: 'Constante',
+        type: 'Variable',
         value: wordsInLine[2],
         size: wordsInLine[1]
       };
+    }
+    if (!this.contains(symbol)) {
       this.table.push(symbol);
     }
     console.log('Got into addDSLine, new table is: ', this.table);
-    return;
   }
 
   analizaStackSegment(line) {

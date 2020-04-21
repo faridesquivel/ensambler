@@ -1,38 +1,57 @@
 <ion-header [translucent]="true">
-  <ion-toolbar color="primary">
+  <ion-toolbar>
     <ion-title>
-      Ensambladores 2020 - Erick Farid - Sergio de Jesús
+      Ensamblador <br> 
+      <span class="names">Erick Farid González Esquivel</span><br> 
+      <span class="names">Sergio de Jesús Martínez</span> de Jesús Martínez
     </ion-title>
+    <ion-buttons slot="end">
+      <ion-button
+        (click)="onShowFileSelectorChange()"
+        routerLinkActive="router-link-active"
+        *ngIf="!showFileSelector"
+      >
+        Cargar Otro Archivo
+      </ion-button>
+      <ion-button
+        *ngIf="table.length > 0" 
+        (click)="onShowTableChange()" 
+      >
+        {{!this.showTable ? 'Mostrar Tabla de Símbolos' : 'Ocultar Tabla de Símbolos'}}
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" color="dark">
-
-  <ion-card color="primary">
+<ion-content [fullscreen]="true">
+  <ion-spinner *ngIf="loading" name="bubbles"></ion-spinner>
+  <ion-card *ngIf="showFileSelector && !loading">
     <ion-card-header class="ion-text-center">
       <strong *ngIf="files[0]">Archivo cargado exitosamente</strong>
       <strong *ngIf="!files[0]">Por favor selecciona un archivo</strong>
     </ion-card-header>
     <ngx-dropzone class="customDrop" (change)="onSelect($event)">
-      <ngx-dropzone-label>Hola, por favor da click aquí o arrastra un archivo <ion-icon class="icon" name="arrow-down-circle-outline"></ion-icon></ngx-dropzone-label>
+      <ngx-dropzone-label>Da CLICK AQUÍ o arrastra un archivo <ion-icon class="icon" name="arrow-down-circle-outline"></ion-icon></ngx-dropzone-label>
       <ngx-dropzone-preview *ngFor="let f of files" [removable]="false" (removed)="onRemove(f)">
           <ngx-dropzone-label class="inside">Archivo leido: {{ f.name }} ({{ f.type }})</ngx-dropzone-label>
       </ngx-dropzone-preview>
     </ngx-dropzone>
   </ion-card>
-  <ion-row>
-    <ion-col size="6">
-      <ion-card *ngIf="selectedFile" class="analizedCard" color="success">
+  <ion-row class="midRow">
+    <ion-col size="6" class="midCol">
+      <ion-card *ngIf="selectedFile" class="analizedCard">
         <ion-card-header class="ion-text-center">
           <strong>Identificación de elementos</strong>
         </ion-card-header>
         <ion-card-content class="cardWithOverflow" class="ion-justify-content-center">
-          <ion-text *ngFor="let word of allWords">{{ analizeWords(word) }}<br *ngIf="analizeWord(word) !== null"></ion-text>
+          <ion-text><br></ion-text>
+          <ion-text><br></ion-text>
+          <ion-text *ngFor="let word of allWords; let i = index">{{ analizeWords(word) }}<br *ngIf="analizeWord(word) !== null"></ion-text>
         </ion-card-content>
       </ion-card>
     </ion-col>
-    <ion-col size="6">
-      <ion-card *ngIf="selectedFile" class="analizedCard" color="danger">
+    <ion-col size="6" class="midCol">
+      <ion-card *ngIf="selectedFile" class="analizedCard">
         <ion-card-header class="ion-text-center">
           <strong>Análisis sintáctico</strong>
         </ion-card-header>
@@ -42,36 +61,38 @@
       </ion-card>
     </ion-col>
   </ion-row>
-  <ion-row *ngIf="table && table.length">
-    <ion-grid>
-      <ion-row>
-        <ion-col size="3">
-          Símbolo
-        </ion-col>
-        <ion-col size="3">
-          Tipo
-        </ion-col>
-        <ion-col size="3">
-          Valor
-        </ion-col>
-        <ion-col size="3">
-          Tamaño
-        </ion-col>
-      </ion-row>
-      <ion-row *ngFor="let line of table">
-        <ion-col size="3">
-          {{ line && line.symbol }}
-        </ion-col>
-        <ion-col size="3">
-          {{ line && line.type }}
-        </ion-col>
-        <ion-col size="3">
-          {{ line && line.value }}
-        </ion-col>
-        <ion-col size="3">
-          {{ line && line.size }}
-        </ion-col>
-      </ion-row>
-    </ion-grid>
+  <ion-row *ngIf="showTable && !loading">
+    <ion-card class="widthExp">
+      <ion-grid class="tableGrid">
+        <ion-row class="header">
+          <ion-col size="3">
+            Símbolo
+          </ion-col>
+          <ion-col size="3">
+            Tipo
+          </ion-col>
+          <ion-col size="3">
+            Valor
+          </ion-col>
+          <ion-col size="3">
+            Tamaño
+          </ion-col>
+        </ion-row>
+        <ion-row *ngFor="let line of table" class="rows">
+          <ion-col size="3">
+            {{ line && line.symbol }}
+          </ion-col>
+          <ion-col size="3">
+            {{ line && line.type }}
+          </ion-col>
+          <ion-col size="3">
+            {{ line && line.value }}
+          </ion-col>
+          <ion-col size="3">
+            {{ line && line.size }}
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </ion-card>
   </ion-row>
 </ion-content>

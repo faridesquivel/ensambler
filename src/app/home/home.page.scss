@@ -27,7 +27,7 @@
 }
 
 ion-content ion-toolbar {
-  --background: translucent;
+  --background: #ff0000 !important;
 }
 
 .customDrop {
@@ -38,7 +38,7 @@ ion-content ion-toolbar {
 }
 
 .analizedCard {
-  color: black;
+  color: var(--ion-color-primary);
   max-height: 60%;
   overflow: auto;
 }
@@ -57,4 +57,26 @@ ngx-dropzone-label {
 
 .whiteCont {
   background-color: aliceblue;
+}
+.midRow {
+  max-height: 55vh;
+  overflow: hidden;
+}
+.midCol {
+  max-height: 80vh;
+}
+.tableGrid {
+  text-align: center;
+}
+.header{
+  font-size: 26px;
+}
+.rows{
+  color: var(--ion-color-primary);
+}
+.widthExp {
+  width: 100%;
+}
+.names{
+  font-size: 16px;
 }
