@@ -29,6 +29,7 @@ export class HomePage implements OnInit {
   ];
   registros = ['AX', 'BX', 'CX', 'DX', 'AH', 'AL', 'BL', 'BH', 'CH', 'CL', 'DH', 'DL', 'DI', 'SI', 'BP', 'SP'];
   sRegs = ['DS', 'ES', 'SS', 'CS'];
+  table = [];
 
   constructor() {}
 
@@ -261,7 +262,9 @@ export class HomePage implements OnInit {
 
   analizeWordWithRegex(word) {
     const isDupWithByte = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5])\)\s*$/gm.test(word);
-    if (isDupWithByte === true) return word + ' es un dup o elemento compuesto con byte';
+    if (isDupWithByte === true) {
+      return word + ' es un dup o elemento compuesto con byte';
+    }
     const isDupWithChar = /dup\(("[^"]*"|'[^']*')\)\s*$/gm.test(word);
     if (isDupWithChar === true) return word + ' es un dup o elemento compuesto con caracter';
     const isDupWithHexa = /dup\((\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*|^0x[0-9a-fA-F]{1,4})\)\s*$/gm.test(word);
@@ -337,6 +340,7 @@ export class HomePage implements OnInit {
     if (regex === false) {
       return this.analizeLineWithDataSegment(line);
     }
+    this.addDSLineToTable(line);
     return line + ' LÍNEA VÁLIDA';
   }
 
@@ -384,6 +388,29 @@ export class HomePage implements OnInit {
     }
 
     return line + ' LÍNEA INVÁLIDA';
+  }
+
+  addDSLineToTable(line) {
+    const wordsInLine = line.trim().split(/\s+/g);
+    if (wordsInLine.length === 3) {
+      const symbol = {
+        symbol: wordsInLine[0],
+        type: 'Constante',
+        value: wordsInLine[2],
+        size: wordsInLine[1]
+      };
+      this.table.push(symbol);
+    } else if (wordsInLine.length === 4) {
+      const symbol = {
+        symbol: wordsInLine[0],
+        type: 'Constante',
+        value: wordsInLine[2],
+        size: wordsInLine[1]
+      };
+      this.table.push(symbol);
+    }
+    console.log('Got into addDSLine, new table is: ', this.table);
+    return;
   }
 
   analizaStackSegment(line) {

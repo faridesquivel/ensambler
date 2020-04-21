@@ -42,4 +42,36 @@
       </ion-card>
     </ion-col>
   </ion-row>
+  <ion-row *ngIf="table && table.length">
+    <ion-grid>
+      <ion-row>
+        <ion-col size="3">
+          Símbolo
+        </ion-col>
+        <ion-col size="3">
+          Tipo
+        </ion-col>
+        <ion-col size="3">
+          Valor
+        </ion-col>
+        <ion-col size="3">
+          Tamaño
+        </ion-col>
+      </ion-row>
+      <ion-row *ngFor="let line of table">
+        <ion-col size="3">
+          {{ line && line.symbol }}
+        </ion-col>
+        <ion-col size="3">
+          {{ line && line.type }}
+        </ion-col>
+        <ion-col size="3">
+          {{ line && line.value }}
+        </ion-col>
+        <ion-col size="3">
+          {{ line && line.size }}
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </ion-row>
 </ion-content>
