@@ -3,19 +3,21 @@
     <ion-title>
       Ensamblador <br> 
       <span class="names">Erick Farid González Esquivel</span><br> 
-      <span class="names">Sergio de Jesús Martínez</span> de Jesús Martínez
+      <span class="names">Sergio de Jesús Martínez</span>
     </ion-title>
     <ion-buttons slot="end">
       <ion-button
         (click)="onShowFileSelectorChange()"
         routerLinkActive="router-link-active"
         *ngIf="!showFileSelector"
+        color="primary"
       >
         Cargar Otro Archivo
       </ion-button>
       <ion-button
         *ngIf="table.length > 0" 
         (click)="onShowTableChange()" 
+        color="primary"
       >
         {{!this.showTable ? 'Mostrar Tabla de Símbolos' : 'Ocultar Tabla de Símbolos'}}
       </ion-button>
@@ -44,9 +46,7 @@
           <strong>Identificación de elementos</strong>
         </ion-card-header>
         <ion-card-content class="cardWithOverflow" class="ion-justify-content-center">
-          <ion-text><br></ion-text>
-          <ion-text><br></ion-text>
-          <ion-text *ngFor="let word of allWords; let i = index">{{ analizeWords(word) }}<br *ngIf="analizeWord(word) !== null"></ion-text>
+          <ion-text class="aWord" *ngFor="let word of allWords; let i = index">{{ analizeWord(word) }}</ion-text>
         </ion-card-content>
       </ion-card>
     </ion-col>
@@ -56,7 +56,7 @@
           <strong>Análisis sintáctico</strong>
         </ion-card-header>
         <ion-card-content class="cardWithOverflow" class="ion-justify-content-center">
-          <ion-text *ngFor="let line of allLines">{{ analizeLine(line) }}<br></ion-text>
+          <ion-text *ngFor="let line of allLines">{{ analizeLine(line) }}</ion-text>
         </ion-card-content>
       </ion-card>
     </ion-col>
@@ -78,18 +78,18 @@
             Tamaño
           </ion-col>
         </ion-row>
-        <ion-row *ngFor="let line of table" class="rows">
+        <ion-row *ngFor="let lin of table" class="rows">
           <ion-col size="3">
-            {{ line && line.symbol }}
+            {{ lin && lin.symbol }}
           </ion-col>
           <ion-col size="3">
-            {{ line && line.type }}
+            {{ lin && lin.type }}
           </ion-col>
           <ion-col size="3">
-            {{ line && line.value }}
+            {{ lin && lin.value }}
           </ion-col>
           <ion-col size="3">
-            {{ line && line.size }}
+            {{ lin && lin.size }}
           </ion-col>
         </ion-row>
       </ion-grid>
