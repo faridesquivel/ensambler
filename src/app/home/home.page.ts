@@ -8,6 +8,7 @@ import { Component, OnInit, ChangeDetectorRef, AfterViewChecked } from '@angular
 export class HomePage implements OnInit, AfterViewChecked {
   allLines: string[] = [];
   allWords: string[] = [];
+  currentAddress = 0;
   currentSegment: string = null;
   lastSegmentInit = '';
   loading = false;
@@ -94,7 +95,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         let mustClose = false;
         for (let index = 0; index < String(leftLine).length; index++) {
           if (mustClose === false) {
-            if (String(leftLine).charAt(index) === ' ') {
+            if (String(leftLine).charAt(index) === ' ' || String(leftLine).charAt(index) === ',') {
               this.allWords.push(newWord);
               newWord = '';
             } else if (index === String(leftLine).length - 1) {
@@ -166,10 +167,136 @@ export class HomePage implements OnInit, AfterViewChecked {
     return (word.valueOf().toLowerCase() === 'ends');
   }
 
+  isWhiteSpace(word) {
+    return /^\s*$/gm.test(word);
+  }
+
+  addToTable(symbol) {
+    if (symbol.type === 'Constante') {
+      this.table.push(symbol);
+    } else {
+      console.log('Current address is: ', this.currentAddress);
+      console.log('Current address IN HEX is: ', this.currentAddress.toString(16));
+      this.table.push({
+        address: this.currentAddress.toString(16),
+        ...symbol
+      });
+      const size = symbol.size === 'db' ? 1 : 2;
+      const valor = symbol.value.length === 1 ? (isNaN(symbol.value[0]) ? String(symbol.value[0]).length : 1) : (size * symbol.value[0]);
+      this.currentAddress += valor;
+    }
+  }
+
+  addDSLineToTable(untrimmedLine) {
+    const line = untrimmedLine.trim();
+    const wordsInLine = [];
+    let newWord = '';
+    let mustClose = false;
+    const lineSize = line.length;
+    for (let index = 0; index < line.length; index++) {
+      const element = String(line).charAt(index);
+      if (element === ' ') {
+        if (mustClose === true) {
+          newWord += element;
+        } else {
+          wordsInLine.push(newWord);
+          newWord = '';
+        }
+      } else if (element === '"') {
+        if (mustClose === false) {
+          mustClose = true;
+          newWord += element;
+        } else {
+          newWord += element;
+          wordsInLine.push(newWord);
+          newWord = '';
+        }
+      } else {
+        if (index === (lineSize - 1)) {
+          newWord += element;
+          wordsInLine.push(newWord);
+        } else {
+          newWord += element;
+        }
+      }
+    }
+    let symbol = {};
+    console.log('Words in line are:', wordsInLine);
+    if (wordsInLine[1] === 'equ') {
+      symbol = {
+        symbol: wordsInLine[0],
+        type: 'Constante',
+        value: [wordsInLine[2]],
+        size: wordsInLine[1]
+      };
+    } else {
+      symbol = {
+        symbol: wordsInLine[0],
+        type: 'Variable',
+        value: wordsInLine[3] ? [wordsInLine[2], wordsInLine[3]] : [wordsInLine[2]],
+        size: wordsInLine[1]
+      };
+    }
+    if (!this.contains(symbol)) {
+      this.addToTable(symbol);
+    }
+    console.log('Got into addDSLine, new table is: ', this.table);
+  }
+
+  addCSLineToTable(untrimmedLine) {
+    /* const wordsInLine = [];
+    let newWord = '';
+    let mustClose = false;
+    console.log('WILL ADD LINE TO TABLE: ', line);
+    const lineSize = line.length;
+    console.log('Tmaño: ', lineSize);
+    for (let index = 0; index < line.length; index++) {
+      const element = String(line).charAt(index);
+      console.log('Char verifying: ', element);
+      if (element === ' ') {
+        if (mustClose === true) {
+          newWord += element;
+        } else {
+          console.log('Will push: ', newWord);
+          wordsInLine.push(newWord);
+          newWord = '';
+        }
+      } else if (element === '"') {
+        if (mustClose === false) {
+          mustClose = true;
+          newWord += element;
+        } else {
+          newWord += element;
+          wordsInLine.push(newWord);
+          newWord = '';
+        }
+      } else {
+        if (index === (lineSize - 1)) {
+          newWord += element;
+          wordsInLine.push(newWord);
+        } else {
+          newWord += element;
+        }
+      }
+    } */
+    const wordsInLine = untrimmedLine.trim().split(/\s+/g);
+    const isUniqueInstruction = /^(AAM|CMPSB|POPF|STI)$/gm.test(wordsInLine[0]);
+    console.log('IS UNIQUE INSTRUCTION: ', untrimmedLine, isUniqueInstruction);
+    if (isUniqueInstruction) {
+      const symbol = {
+        symbol: wordsInLine[0],
+        type: 'Instrucción',
+        value: [wordsInLine[0]],
+        size: '-'
+      }
+      this.addToTable(symbol);
+    }
+  }
+
   analizeWord(word) {
     console.log('Word is: ', word, this.mustEndWord);
     word.trim();
-    if (word.valueOf() === '') {
+    if (this.isWhiteSpace(word)) {
       return;
     }
     const isComment = word.charAt(0) === ';';
@@ -213,8 +340,8 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   analizeCodeSegmentWord(word) {
     // const regex = line.matches("[a-zA-Z][a-zA-Z]+\\s(db|dw|equ),*\\s[A-Z][a-zA-Z]*");
-    if (this.reservedWords.includes(word)) {
-      return word + ' es una palabra reservada';
+    if (this.reservedWords.includes(word.toLowerCase())) {
+      return word + ' es una INSTRUCCIÓN';
     }
     if (this.registros.includes(word.toUpperCase())) {
       return word + ' es un REG';
@@ -224,20 +351,24 @@ export class HomePage implements OnInit, AfterViewChecked {
     }
     const isMemoryT1 = /^(\[BX \+ SI( \+ d8)?\]|\[BX \+ DI( \+ d8)?\]|\[BP \+ SI( \+ d8)?\]|\[BP \+ DI( \+ d8)?\])|(\[SI\]|\[DI\]|d16|\[BX\])$/gm.test(word);
     if (isMemoryT1) {
-      return word + ' es una referencia de memoria';
+      return word + ' es una REFERENCIA DE MEMORIA';
     }
     const isMemoryT2 = /^(\[BX \+ SI( \+ d16)?\]|\[BX \+ DI( \+ d16)?\]|\[BP \+ SI( \+ d16)?\]|\[BP \+ DI( \+ d16)?\])|(\[SI( \+ (d8|d16))\]|\[DI( \+ (d8|d16))\]|\[BP( \+ (d8|d16))\]|\[BX( \+ (d8|d16))\])$/gm.test(word);
     if (isMemoryT2) {
-      return word + ' es una referencia de memoria';
+      return word + ' es una REFERENCIA DE MEMORIA';
     }
     const isVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(word);
     if (isVar) {
-      return word + ' es una variable';
+      return word + ' es una VARIABLE';
+    }
+    const isTag = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}:$/gm.test(word);
+    if (isTag) {
+      return word + ' es una ETIQUETA';
     }
     const isConstNumByteNegative = /^[-+]?[01]?[0-2]?[0-8]\s*$/gm.test(word);
-    if (isConstNumByteNegative === true) { return word + ' es un inmediato'; }
+    if (isConstNumByteNegative === true) { return word + ' es un INMEDIATO'; }
     const isConstNumByte = /^[0-2]?[0-5]?[0-5]\s*$/gm.test(word);
-    if (isConstNumByte === true) { return word + ' es un inmediato'; }
+    if (isConstNumByte === true) { return word + ' es un INMEDIATO'; }
     const isConstNumHexa = /^(\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*$|^0x[0-9a-fA-F]{1,4}$)/gm.test(word);
     if (isConstNumHexa === true) {
       if (parseInt(word, 16) > 255) {
@@ -280,21 +411,15 @@ export class HomePage implements OnInit, AfterViewChecked {
   }
 
   analizeLine(line) {
-    console.log('Linea: ', line , this.mustEnd);
     line.trim();
-    if (line.valueOf() === '') {
+    if (this.isWhiteSpace(line)) {
       return;
     }
     const isComment = line.charAt(0) === ';';
     if (isComment) {
       return;
     }
-    const isCompound = (line.valueOf() === 'data segment')
-    || (line.valueOf() === 'code segment')
-    || (line.valueOf() === 'stack segment');
-    if (isCompound === true) {
-      console.log('Is compound', isCompound);
-      console.log('mustEND:!', this.mustEnd);
+    if (this.isCompound(line) === true) {
       if (this.mustEnd === true) {
         return line + ' Debe de contener un ends antes de abrir un nuevo segmento \n';
       } else {
@@ -303,8 +428,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         return line + ' inicio de segmento \n';
       }
     }
-    const isEnd = line.valueOf() === 'ends';
-    if (isEnd) {
+    if (this.isEnd(line)) {
       if (this.mustEnd === true) {
         this.mustEnd = false;
         return line + ' fin de segmento \n';
@@ -338,11 +462,13 @@ export class HomePage implements OnInit, AfterViewChecked {
   analizaCodeSegment(line) {
     // const regex = line.matches("[a-zA-Z][a-zA-Z]+\\s(db|dw|equ),*\\s[A-Z][a-zA-Z]*");
     const regex = /^(AAM|CMPSB|POPF|STI|JNB\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9}|JG\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})$/gm.test(line);
+    const isTag = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}:$/gm.test(line);
+    if (isTag === true) { return line + ' linea válida'; }
     if (regex === true) {
       console.log('Linea es válida: ', line);
       return line + ' LÍNEA VÁLIDA';
     }
-    console.log('Linea NO FUE válida: ', line);
+    this.addCSLineToTable(line);
     return this.analizeCodeSegmentLine(line);
   }
 
@@ -416,37 +542,13 @@ export class HomePage implements OnInit, AfterViewChecked {
     return line + ' LÍNEA INVÁLIDA';
   }
 
-  addDSLineToTable(line) {
-    const wordsInLine = line.trim().split(/\s+/g);
-    let symbol = {};
-    if (wordsInLine[1] === 'equ') {
-      symbol = {
-        symbol: wordsInLine[0],
-        type: 'Constante',
-        value: wordsInLine[2],
-        size: wordsInLine[1]
-      };
-    } else {
-      symbol = {
-        symbol: wordsInLine[0],
-        type: 'Variable',
-        value: wordsInLine[2],
-        size: wordsInLine[1]
-      };
-    }
-    if (!this.contains(symbol)) {
-      this.table.push(symbol);
-    }
-    console.log('Got into addDSLine, new table is: ', this.table);
-  }
-
   analizaStackSegment(line) {
     const regex = /^\s*?dw\s+("[^"]*"\s*|'[^']*'\s*|\d{1,5})\s*dup\(("[^"]*"\s*|'[^']*'\s*|\d{1,5})\)\s*$/gm.test(line);
     console.log('Regex is: ', regex, ' for line: ', line);
     if (regex === false) {
       return this.analizeLineWithStackSegment(line);
     }
-    return regex === true ? (line + ' LÍNEA VÁLIDA') : (line + ' LÍNEA INVÁLIDA, no se pudo analizar');
+    return line + ' LÍNEA VÁLIDA';
   }
 
   analizaStackSegmentWords(line) {
