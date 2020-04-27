@@ -149,6 +149,7 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   contains(obj) {
     let contains = false;
+    // tslint:disable-next-line: prefer-for-of
     for (let index = 0; index < this.table.length; index++) {
       if (this.table[index].symbol === obj.symbol) {
         contains = true;
@@ -178,11 +179,15 @@ export class HomePage implements OnInit, AfterViewChecked {
       console.log('Current address is: ', this.currentAddress);
       console.log('Current address IN HEX is: ', this.currentAddress.toString(16));
       this.table.push({
-        address: this.currentAddress.toString(16),
+        address: this.currentAddress,
         ...symbol
       });
       const size = symbol.size === 'db' ? 1 : 2;
-      const valor = symbol.value.length === 1 ? (isNaN(symbol.value[0]) ? String(symbol.value[0]).length : 1) : (size * symbol.value[0]);
+      console.log('Symbol will be added, ', symbol);
+
+      // tslint:disable-next-line: max-line-length
+      const valor = symbol.value.length === 1 ? (isNaN(symbol.value[0]) ? (String(symbol.value[0]).length - 2) : size) : (size * symbol.value[0]);
+      console.log('Valor añadido es: ', valor);
       this.currentAddress += valor;
     }
   }
@@ -286,9 +291,9 @@ export class HomePage implements OnInit, AfterViewChecked {
       const symbol = {
         symbol: wordsInLine[0],
         type: 'Instrucción',
-        value: [wordsInLine[0]],
+        value: [0],
         size: '-'
-      }
+      };
       this.addToTable(symbol);
     }
   }
@@ -341,73 +346,75 @@ export class HomePage implements OnInit, AfterViewChecked {
   analizeCodeSegmentWord(word) {
     // const regex = line.matches("[a-zA-Z][a-zA-Z]+\\s(db|dw|equ),*\\s[A-Z][a-zA-Z]*");
     if (this.reservedWords.includes(word.toLowerCase())) {
-      return word + ' es una INSTRUCCIÓN';
+      return word + ' -- es una INSTRUCCIÓN';
     }
     if (this.registros.includes(word.toUpperCase())) {
-      return word + ' es un REG';
+      return word + ' -- es un REG';
     }
     if (this.sRegs.includes(word.toUpperCase())) {
-      return word + ' es un SREG';
+      return word + ' -- es un SREG';
     }
+    // tslint:disable-next-line: max-line-length
     const isMemoryT1 = /^(\[BX \+ SI( \+ d8)?\]|\[BX \+ DI( \+ d8)?\]|\[BP \+ SI( \+ d8)?\]|\[BP \+ DI( \+ d8)?\])|(\[SI\]|\[DI\]|d16|\[BX\])$/gm.test(word);
     if (isMemoryT1) {
-      return word + ' es una REFERENCIA DE MEMORIA';
+      return word + ' -- es una REFERENCIA DE MEMORIA';
     }
+    // tslint:disable-next-line: max-line-length
     const isMemoryT2 = /^(\[BX \+ SI( \+ d16)?\]|\[BX \+ DI( \+ d16)?\]|\[BP \+ SI( \+ d16)?\]|\[BP \+ DI( \+ d16)?\])|(\[SI( \+ (d8|d16))\]|\[DI( \+ (d8|d16))\]|\[BP( \+ (d8|d16))\]|\[BX( \+ (d8|d16))\])$/gm.test(word);
     if (isMemoryT2) {
-      return word + ' es una REFERENCIA DE MEMORIA';
+      return word + ' -- es una REFERENCIA DE MEMORIA';
     }
     const isVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(word);
     if (isVar) {
-      return word + ' es una VARIABLE';
+      return word + ' -- es una VARIABLE';
     }
     const isTag = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}:$/gm.test(word);
     if (isTag) {
-      return word + ' es una ETIQUETA';
+      return word + ' -- es una ETIQUETA';
     }
     const isConstNumByteNegative = /^[-+]?[01]?[0-2]?[0-8]\s*$/gm.test(word);
-    if (isConstNumByteNegative === true) { return word + ' es un INMEDIATO'; }
+    if (isConstNumByteNegative === true) { return word + ' -- es un INMEDIATO'; }
     const isConstNumByte = /^[0-2]?[0-5]?[0-5]\s*$/gm.test(word);
-    if (isConstNumByte === true) { return word + ' es un INMEDIATO'; }
+    if (isConstNumByte === true) { return word + ' -- es un INMEDIATO'; }
     const isConstNumHexa = /^(\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*$|^0x[0-9a-fA-F]{1,4}$)/gm.test(word);
     if (isConstNumHexa === true) {
       if (parseInt(word, 16) > 255) {
-        return word + ' es un inmediato';
+        return word + ' -- es un inmediato';
       }
-      return word + ' es un inmediato';
+      return word + ' -- es un inmediato';
     }
     const isConstString = /"[^"]*"\s*$|'[^']*'\s*$/gm.test(word);
-    if (isConstString === true) { return word + ' es una constante caractér'; }
-    return word + ' es un símbolo desconocido';
+    if (isConstString === true) { return word + ' -- es una constante caractér'; }
+    return word + ' -- es un símbolo desconocido';
   }
 
   analizeWordWithRegex(word) {
     const isDupWithByte = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5])\)\s*$/gm.test(word);
     if (isDupWithByte === true) {
-      return word + ' es un dup o elemento compuesto con byte';
+      return word + ' -- es un dup o elemento compuesto con byte';
     }
     const isDupWithChar = /dup\(("[^"]*"|'[^']*')\)\s*$/gm.test(word);
-    if (isDupWithChar === true) return word + ' es un dup o elemento compuesto con caracter';
+    if (isDupWithChar === true) { return word + ' -- es un dup o elemento compuesto con caracter'; }
     const isDupWithHexa = /dup\((\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*|^0x[0-9a-fA-F]{1,4})\)\s*$/gm.test(word);
-    if (isDupWithHexa === true) return word + ' es un dup o elemento compuesto con hexadecimal';
+    if (isDupWithHexa === true) { return word + ' -- es un dup o elemento compuesto con hexadecimal'; }
     const isSize = /(db|dw|equ)/gm.test(word);
-    if (isSize === true) return word + ' es un símbolo de tamaño';
+    if (isSize === true) { return word + ' -- es un símbolo de tamaño'; }
     const isVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(word);
-    if (isVar === true) return word + ' es un símbolo de variable';
+    if (isVar === true) { return word + ' -- es un símbolo de variable'; }
     const isConstNumByteNegative = /^[-+]?[01]?[0-2]?[0-8]\s*$/gm.test(word);
-    if (isConstNumByteNegative === true) return word + ' es una constante numérica';
+    if (isConstNumByteNegative === true) { return word + ' -- es una constante numérica'; }
     const isConstNumByte = /^[0-2]?[0-5]?[0-5]\s*$/gm.test(word);
-    if (isConstNumByte === true) return word + ' es una constante numérica';
+    if (isConstNumByte === true) { return word + ' -- es una constante numérica'; }
     const isConstNumHexa = /^(\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*$|^0x[0-9a-fA-F]{1,4}$)/gm.test(word);
     if (isConstNumHexa === true) {
       if (parseInt(word, 16) > 255) {
-        return word + ' es una constante numérica inválida';
+        return word + ' -- es una constante numérica inválida';
       }
-      return word + ' es una constante numérica';
+      return word + ' -- es una constante numérica';
     }
     const isConstString = /"[^"]*"\s*$|'[^']*'\s*$/gm.test(word);
-    if (isConstString === true) return word + ' es una constante caractér';
-    return word + ' elemento inválido';
+    if (isConstString === true) { return word + ' -- es una constante caractér'; }
+    return word + ' -- elemento inválido';
   }
 
   analizeLine(line) {
@@ -421,7 +428,7 @@ export class HomePage implements OnInit, AfterViewChecked {
     }
     if (this.isCompound(line) === true) {
       if (this.mustEnd === true) {
-        return line + ' Debe de contener un ends antes de abrir un nuevo segmento \n';
+        return line + ' -- Debe de contener un ends antes de abrir un nuevo segmento \n';
       } else {
         this.mustEnd = true;
         this.currentSegment = line.valueOf();
@@ -433,7 +440,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         this.mustEnd = false;
         return line + ' fin de segmento \n';
       } else {
-        return line + ' LÍNEA INVÁLIDA, para usar fin de segmento se necesita iniciar un segmento \n';
+        return line + ' -- Error: Para usar fin de segmento se necesita iniciar un segmento \n';
       }
     }
     if (this.currentSegment !== null) {
@@ -474,11 +481,24 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   analizeCodeSegmentLine(line) {
     const wordsInLine = line.trim().split(/\s+/g);
+    const isNoParamInst = /^(AAM|CMPSB|POPF|STI)$/gm.test(wordsInLine[0]);
+    if (isNoParamInst === true) {
+      return `${line} -- ERROR: Parámetros inesperados : ${wordsInLine.filter((w, index) => index !== 0 && w)}`;
+    }
+    const isJNBorJG = /^JNB|JG$/gm.test(wordsInLine[0]);
+    if (isJNBorJG === true) {
+      console.log('Line is almost valid, ', line);
+      if (wordsInLine.length > 2) {
+        return `${line} -- ERROR: Parámetros inesperados : ${wordsInLine.filter((w, index) => index !== 0 && w)}`;
+      }
+      return `${line} -- ERROR: Incorrect variable`;
+    }
     console.log('In code segment, words are: ', wordsInLine);
     return line + ' linea incorrecta';
   }
 
   analizaDataSegment(line) {
+    // tslint:disable-next-line: max-line-length
     const regex = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}\s(db\s(dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$|"[^"]*"|'[^']*'|[-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|(?:[a-fA-F0–9]{6}|[a-fA-F0–9]{3}))\s*?$|dw\s(("[^"]*"|'[^']*')|("[^"]*"|'[^']*')\sdup\(("[^"]*"|'[^']*')\))\s*?$|equ\s("[^"]*"|'[^']*')\s*$)/gm.test(line);
     console.log('Regex is: ', regex, ' for line: ', line);
     if (regex === false) {
@@ -494,48 +514,49 @@ export class HomePage implements OnInit, AfterViewChecked {
 
     const badVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(wordsInLine[0]);
     const badSize = /(db|dw)$/gm.test(wordsInLine[1]);
+    // tslint:disable-next-line: max-line-length
     const badConst = /^"[^"]*"\s*$|^'[^']*'\s*$|^[-+]?[01]?[0-2]?[0-8]\s*$|^[0-2]?[0-5]?[0-5]\s*$|^\b([a-fA-F0–9]{6}|^[a-fA-F0–9]{3})\b\s*$/gm.test(wordsInLine[2]);
     const badEquConst = /("[^"]*"|'[^']*')\s*$/gm.test(wordsInLine[2]);
     if (wordsInLine.length === 3) {
       console.log('After reviewing ', wordsInLine, ' barVar, barSize and badConst are:', badVar, badSize, badConst);
       if (wordsInLine[1] === 'equ') {
         if (badVar === false) {
-          return line + ' Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
+          return line + ' -- Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
         } else if (badEquConst === false) {
-          return line + ' Error en: ' + wordsInLine[2] + ', constante inválida';
+          return line + ' -- Error en: ' + wordsInLine[2] + ', constante inválida';
         }
       } else {
         if (badVar === false) {
-          return line + ' Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
+          return line + ' -- Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
         } else if (badSize === false) {
-          return line + ' Error en: ' + wordsInLine[1] + ', el tamaño declarado no es válido';
+          return line + ' -- Error en: ' + wordsInLine[1] + ', el tamaño declarado no es válido';
         } else if (badConst === false) {
-          return line + ' Error en: ' + wordsInLine[2] + ', constante inválida';
+          return line + ' -- Error en: ' + wordsInLine[2] + ', constante inválida';
         }
       }
     } else if (wordsInLine.length === 4) {
       const badDup = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
       console.log('After reviewing ', wordsInLine, ' barVar, barSize, badConst and badDup are:', badVar, badSize, badConst, badDup);
       if (badVar === false) {
-        return line + ' Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
+        return line + ' -- Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
       } else if (badSize === false) {
-        return line + ' Error en: ' + wordsInLine[1] + ', el tamaño es inválido';
+        return line + ' -- Error en: ' + wordsInLine[1] + ', el tamaño es inválido';
       } else if (badConst === false) {
-        return line + ' Error en: ' + wordsInLine[2] + ', constante inválida';
+        return line + ' -- Error en: ' + wordsInLine[2] + ', constante inválida';
       } else if (badDup === false) {
-        return line + ' Error en: ' + wordsInLine[3] + ', DUP inválida';
+        return line + ' -- Error en: ' + wordsInLine[3] + ', DUP inválida';
       }
     } else if (wordsInLine.length > 4) {
       const badDup = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
       console.log('After reviewing ', wordsInLine, ' barVar, barSize, badConst and badDup are:', badVar, badSize, badConst, badDup);
       if (badVar === false) {
-        return line + ' Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
+        return line + ' -- Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
       } else if (badSize === false) {
-        return line + ' Error en: ' + wordsInLine[1] + ', el tamaño es inválido';
+        return line + ' -- Error en: ' + wordsInLine[1] + ', el tamaño es inválido';
       } else if (badConst === false) {
-        return line + ' Error en: ' + wordsInLine[2] + ', constante inválida';
+        return line + ' -- Error en: ' + wordsInLine[2] + ', constante inválida';
       } else if (badDup === false) {
-        return line + ' Error en: ' + wordsInLine[3] + ', DUP inválida';
+        return line + ' -- Error en: ' + wordsInLine[3] + ', DUP inválida';
       }
     }
 
@@ -568,11 +589,11 @@ export class HomePage implements OnInit, AfterViewChecked {
       const badConst = /("[^"]*"|'[^']*'|\d{1,5})/gm.test(wordsInLine[1]);
       const badDup = /dup\(("[^"]*"\s*|'[^']*'\s*|\d{1,5})\)/gm.test(wordsInLine[1]);
       if (badSize === false) {
-        return line + ' Error en: ' + wordsInLine[0] + ' tamaño inválido';
+        return line + ' -- Error en: ' + wordsInLine[0] + ' tamaño inválido';
       } else if (badConst === false) {
-        return line + ' Error en: ' + wordsInLine[1] + ' constante inválida';
+        return line + ' -- Error en: ' + wordsInLine[1] + ' constante inválida';
       } else if (badDup === false) {
-        return line + ' Error en: ' + wordsInLine[2] + ' DUP inválido';
+        return line + ' -- Error en: ' + wordsInLine[2] + ' DUP inválido';
       }
     }
     return line + ' LÍNEA INVÁLIDA';
