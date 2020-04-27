@@ -32,9 +32,10 @@ export class HomePage implements OnInit, AfterViewChecked {
     'jnle',
     'ja'
   ];
-  registros = ['AX', 'BX', 'CX', 'DX', 'AH', 'AL', 'BL', 'BH', 'CH', 'CL', 'DH', 'DL', 'DI', 'SI', 'BP', 'SP'];
-  sRegs = ['DS', 'ES', 'SS', 'CS'];
+  registros = ['ax', 'bx', 'cx', 'dx', 'ah', 'al', 'bl', 'bh', 'ch', 'cl', 'dh', 'dl', 'di', 'si', 'bp', 'sp'];
+  sRegs = ['ds', 'es', 'ss', 'cs'];
   table = [];
+  tags = [];
 
   constructor(private cdRef: ChangeDetectorRef) {}
 
@@ -468,11 +469,26 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   analizaCodeSegment(line) {
     // const regex = line.matches("[a-zA-Z][a-zA-Z]+\\s(db|dw|equ),*\\s[A-Z][a-zA-Z]*");
-    const regex = /^(AAM|CMPSB|POPF|STI|JNB\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9}|JG\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})$/gm.test(line);
-    const isTag = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}:$/gm.test(line);
-    if (isTag === true) { return line + ' linea válida'; }
+    const regex = /^(AAM|CMPSB|POPF|STI)\s*?$/gm.test(line);
+    const isTag = /^[a-zA-Z]{1}[a-zA-Z0-9]{0,9}:\s*?$/gm.test(line);
+    const isJNBorJG = /^(JNB\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9}|JG\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})\s*?$/gm.test(line);
+    if (isTag === true) {
+      this.tags.push(line);
+      return line + ' linea válida';
+    }
     if (regex === true) {
       console.log('Linea es válida: ', line);
+      return line + ' LÍNEA VÁLIDA';
+    }
+    if (isJNBorJG) {
+      const wordsInLine = line.trim().split(/\s+/g);
+      if (this.sRegs.includes(wordsInLine[1].toLowerCase()) || this.registros.includes(wordsInLine[1].toLowerCase())) {
+        // tslint:disable-next-line: max-line-length
+        return `${line} -- Error: Se esperaba una etiqueta, en cambio hay un ${this.sRegs.includes(wordsInLine[1].toLowerCase()) ? 'SREG' : 'REG' }`;
+      }
+      if (!this.tags.includes(wordsInLine[1] + ':')) {
+        return `${line} -- Etiqueta no definida`;
+      }
       return line + ' LÍNEA VÁLIDA';
     }
     this.addCSLineToTable(line);
@@ -487,11 +503,11 @@ export class HomePage implements OnInit, AfterViewChecked {
     }
     const isJNBorJG = /^JNB|JG$/gm.test(wordsInLine[0]);
     if (isJNBorJG === true) {
-      console.log('Line is almost valid, ', line);
       if (wordsInLine.length > 2) {
         return `${line} -- ERROR: Parámetros inesperados : ${wordsInLine.filter((w, index) => index !== 0 && w)}`;
       }
-      return `${line} -- ERROR: Incorrect variable`;
+      console.log(`${line} -- ERROR: Variable incorrecta`);
+      return `${line} -- ERROR: Variable incorrecta`;
     }
     console.log('In code segment, words are: ', wordsInLine);
     return line + ' linea incorrecta';
