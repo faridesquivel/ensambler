@@ -172,10 +172,11 @@ export class HomePage implements OnInit, AfterViewChecked {
   isImmediate(word) {
     const isConstNumByteNegative = /^[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0\s*$/gm.test(word);
     const isConstNumByte = /^[0-2]?[0-5]?[0-5]\s*$/gm.test(word);
-    const isConstNumHexa = /^(\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*$|^0x[0-9a-fA-F]{1,4}$)/gm.test(word);
+    const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(word);
     let isValidHexa = false;
     if (isConstNumHexa) {
-      isValidHexa = parseInt(word, 16) > 255;
+      console.log(`Word is hexa: ${word} and value in hexa is: ${parseInt(word, 16)}`);
+      isValidHexa = parseInt(word, 16) < 255;
     }
     return isConstNumByte || isConstNumByteNegative || (isConstNumHexa && isValidHexa);
   }
@@ -621,6 +622,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
       }
+      return `${line} -- ERROR: ${wordsInLine[1]} es un parámetro inválido`;
     }
     this.addCSLineToTable(line);
     return this.analizeCodeSegmentLine(line);
