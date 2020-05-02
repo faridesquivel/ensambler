@@ -21,14 +21,14 @@ export class HomePage implements OnInit, AfterViewChecked {
   reservedWords = [
     'aam',
     'cmpsb',
-    'popf',
+    'jg',
+    'jnb',
     'sti',
+    'popf',
     'int',
     'not',
     'and',
     'cmp',
-    'jg',
-    'jnb',
     'jnle',
     'ja'
   ];
@@ -169,9 +169,51 @@ export class HomePage implements OnInit, AfterViewChecked {
     return (word.valueOf().toLowerCase() === 'ends');
   }
 
+  isImmediate(word) {
+    const isConstNumByteNegative = /^[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0\s*$/gm.test(word);
+    const isConstNumByte = /^[0-2]?[0-5]?[0-5]\s*$/gm.test(word);
+    const isConstNumHexa = /^(\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*$|^0x[0-9a-fA-F]{1,4}$)/gm.test(word);
+    let isValidHexa = false;
+    if (isConstNumHexa) {
+      isValidHexa = parseInt(word, 16) > 255;
+    }
+    return isConstNumByte || isConstNumByteNegative || (isConstNumHexa && isValidHexa);
+  }
+
+  isMemory(word) {
+    // tslint:disable-next-line: max-line-length
+    const isMemoryT1 = /^(\[BX \+ SI( \+ d8)?\]|\[BX \+ DI( \+ d8)?\]|\[BP \+ SI( \+ d8)?\]|\[BP \+ DI( \+ d8)?\])|(\[SI\]|\[DI\]|d16|\[BX\])$/gm.test(word);
+    // tslint:disable-next-line: max-line-length
+    const isMemoryT2 = /^(\[BX \+ SI( \+ d16)?\]|\[BX \+ DI( \+ d16)?\]|\[BP \+ SI( \+ d16)?\]|\[BP \+ DI( \+ d16)?\])|(\[SI( \+ (d8|d16))\]|\[DI( \+ (d8|d16))\]|\[BP( \+ (d8|d16))\]|\[BX( \+ (d8|d16))\])$/gm.test(word);
+    const isVar = this.isVar(word);
+    return isMemoryT1 || isMemoryT2 || isVar;
+  }
+
+  isReg(word) {
+    return this.registros.includes(word.toLowerCase());
+  }
+
+  isSReg(word) {
+    return this.sRegs.includes(word.toLowerCase());
+  }
+
+  isVar(word) {
+    const isVar = /^[a-zA-Z]{1}[a-zA-Z0-9]{0,9}\s*?$/gm.test(word);
+    if (isVar) {
+      if (this.registros.includes(word.toLowerCase())) {
+        return false;
+      }
+      if (this.sRegs.includes(word.toLowerCase())) {
+        return false;
+      }
+      return true;
+    }
+  }
+
   isWhiteSpace(word) {
     return /^\s*$/gm.test(word);
   }
+
 
   addToTable(symbol) {
     if (symbol.type === 'Constante') {
@@ -315,7 +357,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       } else {
         this.mustEndWord = true;
         this.currentSegment = word.valueOf();
-        return word + ' es un PSEUDÓNIMO';
+        return word + ' inicio de segmento';
       }
     }
     if (this.isEnd(word)) {
@@ -349,10 +391,10 @@ export class HomePage implements OnInit, AfterViewChecked {
     if (this.reservedWords.includes(word.toLowerCase())) {
       return word + ' -- es una INSTRUCCIÓN';
     }
-    if (this.registros.includes(word.toUpperCase())) {
+    if (this.registros.includes(word.toLowerCase())) {
       return word + ' -- es un REG';
     }
-    if (this.sRegs.includes(word.toUpperCase())) {
+    if (this.sRegs.includes(word.toLowerCase())) {
       return word + ' -- es un SREG';
     }
     // tslint:disable-next-line: max-line-length
@@ -373,7 +415,7 @@ export class HomePage implements OnInit, AfterViewChecked {
     if (isTag) {
       return word + ' -- es una ETIQUETA';
     }
-    const isConstNumByteNegative = /^[-+]?[01]?[0-2]?[0-8]\s*$/gm.test(word);
+    const isConstNumByteNegative = /^[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0\s*$/gm.test(word);
     if (isConstNumByteNegative === true) { return word + ' -- es un INMEDIATO'; }
     const isConstNumByte = /^[0-2]?[0-5]?[0-5]\s*$/gm.test(word);
     if (isConstNumByte === true) { return word + ' -- es un INMEDIATO'; }
@@ -390,7 +432,7 @@ export class HomePage implements OnInit, AfterViewChecked {
   }
 
   analizeWordWithRegex(word) {
-    const isDupWithByte = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5])\)\s*$/gm.test(word);
+    const isDupWithByte = /dup\(([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5])\)\s*$/gm.test(word);
     if (isDupWithByte === true) {
       return word + ' -- es un dup o elemento compuesto con byte';
     }
@@ -402,7 +444,7 @@ export class HomePage implements OnInit, AfterViewChecked {
     if (isSize === true) { return word + ' -- es un símbolo de tamaño'; }
     const isVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(word);
     if (isVar === true) { return word + ' -- es un símbolo de variable'; }
-    const isConstNumByteNegative = /^[-+]?[01]?[0-2]?[0-8]\s*$/gm.test(word);
+    const isConstNumByteNegative = /^[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0\s*$/gm.test(word);
     if (isConstNumByteNegative === true) { return word + ' -- es una constante numérica'; }
     const isConstNumByte = /^[0-2]?[0-5]?[0-5]\s*$/gm.test(word);
     if (isConstNumByte === true) { return word + ' -- es una constante numérica'; }
@@ -477,7 +519,6 @@ export class HomePage implements OnInit, AfterViewChecked {
       return line + ' linea válida';
     }
     if (regex === true) {
-      console.log('Linea es válida: ', line);
       return line + ' LÍNEA VÁLIDA';
     }
     if (isJNBorJG) {
@@ -490,6 +531,96 @@ export class HomePage implements OnInit, AfterViewChecked {
         return `${line} -- Etiqueta no definida`;
       }
       return line + ' LÍNEA VÁLIDA';
+    }
+    // tslint:disable-next-line: max-line-length
+    const isInt = /^INT\s([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*)$/gm.test(line);
+    if (isInt) {
+      const wordsInLine = line.trim().split(/\s+/g);
+      const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(wordsInLine[1]);
+      if (isConstNumHexa === true) {
+        if (parseInt(wordsInLine[1], 16) > 255) {
+          return line + ' -- ERROR: Constante numérica inválida';
+        }
+        return line + ' LÍNEA VÁLIDA';
+      }
+    }
+
+    // NOT CHECK
+    const isNotWReg = /^NOT\s((A|B|C|D|S)(X|H|L|I|P))\s*$/gm.test(line);
+    if (isNotWReg) {
+      return line + ' LÍNEA VÁLIDA';
+    }
+    const isNotWMem = /^NOT\s[^\s]*\s*$/gm.test(line);
+    if (isNotWMem) {
+      const wordsInLine = line.trim().split(/\s+/g);
+      if (wordsInLine.length > 2) {
+        return line + ' -- ERROR: La instrucción NOT debe de contener sólo un parámetro';
+      }
+      const isVar = /^[a-zA-Z]{1}[a-zA-Z0-9]{0,9}\s*?$/gm.test(wordsInLine[1]);
+      if (isVar) {
+        if (this.registros.includes(wordsInLine[1].toLowerCase())) {
+          return `${line} -- ERROR: Parámetro inválido para instrucción NOT, no puede ser un registro`;
+        }
+        if (this.sRegs.includes(wordsInLine[1].toLowerCase())) {
+          return `${line} -- ERROR: Parámetro inválido para instrucción NOT, no puede ser un SREG`;
+        }
+        return `${line} LÍNEA VÁLIDA`;
+      }
+      if (this.isMemory(wordsInLine[1])) {
+        return `${line} LÍNEA VÁLIDA`;
+      }
+      return `${line} -- ERROR: El parámetro de la instrucción NOT es inválido, debe de contener un registro o memoria`;
+    }
+    const isAnd = /^AND\s[^\s]+\s*,\s*[^\s]+\s*$/gm.test(line);
+    if (isAnd) {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      console.log('Words for ISAND', wordsInLine);
+      if (wordsInLine.length > 3) {
+        return `${line} -- ERROR: La instrucción AND solo puede tener 2 parámetros `;
+      }
+      if (this.isReg(wordsInLine[1])) {
+        if (this.isReg(wordsInLine[2])) {
+          return `${line} LÍNEA VÁLIDA`;
+        } else if (this.isMemory(wordsInLine[2])) {
+          return `${line} LÍNEA VÁLIDA`;
+        } else if (this.isImmediate(wordsInLine[2])) {
+          return `${line} LÍNEA VÁLIDA`;
+        }
+        return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
+      } else if (this.isMemory(wordsInLine[1])) {
+        if (this.isReg(wordsInLine[2])) {
+          return `${line} LÍNEA VÁLIDA`;
+        } else if (this.isImmediate(wordsInLine[2])) {
+          return `${line} LÍNEA VÁLIDA`;
+        }
+        return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
+      }
+      return `${line} -- ERROR: ${wordsInLine[1]} es un parámetro inválido`;
+    }
+    const isCmp = /^CMP\s[^\s]+\s*,\s*[^\s]+\s*$/gm.test(line);
+    if (isCmp) {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      console.log('Words for Cmp', wordsInLine);
+      if (wordsInLine.length > 3) {
+        return `${line} -- ERROR: La instrucción CMP solo puede tener 2 parámetros `;
+      }
+      if (this.isReg(wordsInLine[1])) {
+        if (this.isReg(wordsInLine[2])) {
+          return `${line} LÍNEA VÁLIDA`;
+        } else if (this.isMemory(wordsInLine[2])) {
+          return `${line} LÍNEA VÁLIDA`;
+        } else if (this.isImmediate(wordsInLine[2])) {
+          return `${line} LÍNEA VÁLIDA`;
+        }
+        return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
+      } else if (this.isMemory(wordsInLine[1])) {
+        if (this.isReg(wordsInLine[2])) {
+          return `${line} LÍNEA VÁLIDA`;
+        } else if (this.isImmediate(wordsInLine[2])) {
+          return `${line} LÍNEA VÁLIDA`;
+        }
+        return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
+      }
     }
     this.addCSLineToTable(line);
     return this.analizeCodeSegmentLine(line);
@@ -515,7 +646,7 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   analizaDataSegment(line) {
     // tslint:disable-next-line: max-line-length
-    const regex = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}\s(db\s(dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$|"[^"]*"|'[^']*'|[-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|(?:[a-fA-F0–9]{6}|[a-fA-F0–9]{3}))\s*?$|dw\s(("[^"]*"|'[^']*')|("[^"]*"|'[^']*')\sdup\(("[^"]*"|'[^']*')\))\s*?$|equ\s("[^"]*"|'[^']*')\s*$)/gm.test(line);
+    const regex = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}\s(db\s(dup\(([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$|"[^"]*"|'[^']*'|[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(?:[a-fA-F0–9]{6}|[a-fA-F0–9]{3}))\s*?$|dw\s(("[^"]*"|'[^']*')|("[^"]*"|'[^']*')\sdup\(("[^"]*"|'[^']*')\))\s*?$|equ\s("[^"]*"|'[^']*')\s*$)/gm.test(line);
     console.log('Regex is: ', regex, ' for line: ', line);
     if (regex === false) {
       return this.analizeLineWithDataSegment(line);
@@ -531,7 +662,7 @@ export class HomePage implements OnInit, AfterViewChecked {
     const badVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(wordsInLine[0]);
     const badSize = /(db|dw)$/gm.test(wordsInLine[1]);
     // tslint:disable-next-line: max-line-length
-    const badConst = /^"[^"]*"\s*$|^'[^']*'\s*$|^[-+]?[01]?[0-2]?[0-8]\s*$|^[0-2]?[0-5]?[0-5]\s*$|^\b([a-fA-F0–9]{6}|^[a-fA-F0–9]{3})\b\s*$/gm.test(wordsInLine[2]);
+    const badConst = /^"[^"]*"\s*$|^'[^']*'\s*$|^[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0\s*$|^[0-2]?[0-5]?[0-5]\s*$|^\b([a-fA-F0–9]{6}|^[a-fA-F0–9]{3})\b\s*$/gm.test(wordsInLine[2]);
     const badEquConst = /("[^"]*"|'[^']*')\s*$/gm.test(wordsInLine[2]);
     if (wordsInLine.length === 3) {
       console.log('After reviewing ', wordsInLine, ' barVar, barSize and badConst are:', badVar, badSize, badConst);
@@ -551,7 +682,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         }
       }
     } else if (wordsInLine.length === 4) {
-      const badDup = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
+      const badDup = /dup\(([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
       console.log('After reviewing ', wordsInLine, ' barVar, barSize, badConst and badDup are:', badVar, badSize, badConst, badDup);
       if (badVar === false) {
         return line + ' -- Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
@@ -563,7 +694,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         return line + ' -- Error en: ' + wordsInLine[3] + ', DUP inválida';
       }
     } else if (wordsInLine.length > 4) {
-      const badDup = /dup\(([-+]?[01]?[0-2]?[0-8]|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
+      const badDup = /dup\(([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
       console.log('After reviewing ', wordsInLine, ' barVar, barSize, badConst and badDup are:', badVar, badSize, badConst, badDup);
       if (badVar === false) {
         return line + ' -- Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
