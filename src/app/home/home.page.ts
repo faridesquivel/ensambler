@@ -148,6 +148,16 @@ export class HomePage implements OnInit, AfterViewChecked {
     this.files.splice(this.files.indexOf(event), 1);
   }
 
+  setHexAddress(add) {
+    const length = String(add).length;
+    let newAddress = '';
+    for (let index = 0; index < (4 - length); index++) {
+      newAddress += '0';
+    }
+    newAddress += add;
+    return newAddress;
+  }
+
   contains(obj) {
     let contains = false;
     // tslint:disable-next-line: prefer-for-of
@@ -169,8 +179,30 @@ export class HomePage implements OnInit, AfterViewChecked {
     return (word.valueOf().toLowerCase() === 'ends');
   }
 
-  isImmediate(word) {
-    const isConstNumByteNegative = /^[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0\s*$/gm.test(word);
+  isImmediateByteLine (word) {
+    // tslint:disable-next-line: max-line-length
+    const isImmediateByte = /^([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?|[0-1]{0, 8}(b|B)?)\s*$/gm.test(word);
+    return isImmediateByte;
+  }
+
+  isImmediateWordLine (word) {
+    const isImmediateWord = /^[0-1]{0, 16}(b|B)?$/gm.test(word);
+    // tslint:disable-next-line: max-line-length
+    const isConstNumBytePositive = /^([0-9]{1,4}|[1-2][0-9]{4}|[3][0-1][0-9]{3}|[3][2][0-6][0-9]{2}|[3][2][7][0-5][0-9]|[3][2][7][6][0-8])$/gm.test(word);
+    // tslint:disable-next-line: max-line-length
+    const isConstNumByteNegative = /^-([0-9]{1,4}|[1-2][0-9]{4}|[3][0-1][0-9]{3}|[3][2][0-6][0-9]{2}|[3][2][7][0-5][0-9]|[3][2][7][6][0-7])$/gm.test(word);
+    const isConstNumByte = /^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/gm.test(word);
+    const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(word);
+    let isValidHexa = false;
+    if (isConstNumHexa) {
+      console.log(`Word is hexa: ${word} and value in hexa is: ${parseInt(word, 16)}`);
+      isValidHexa = parseInt(word, 16) < 65536;
+    }
+    return isConstNumByte || isConstNumBytePositive || isConstNumByteNegative || (isConstNumHexa && isValidHexa) || isImmediateWord;
+  }
+
+  isImmediateByte (word) {
+    const isConstNumByteNegative = /^[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0 \s*$/gm.test(word);
     const isConstNumByte = /^[0-2]?[0-5]?[0-5]\s*$/gm.test(word);
     const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(word);
     let isValidHexa = false;
@@ -178,16 +210,59 @@ export class HomePage implements OnInit, AfterViewChecked {
       console.log(`Word is hexa: ${word} and value in hexa is: ${parseInt(word, 16)}`);
       isValidHexa = parseInt(word, 16) < 255;
     }
-    return isConstNumByte || isConstNumByteNegative || (isConstNumHexa && isValidHexa);
+    const isBinary = /^[0-1]{0, 8}(b|B)?$/gm.test(word);
+    return isConstNumByte || isConstNumByteNegative || (isConstNumHexa && isValidHexa) || isBinary;
+  }
+
+  isImmediateWord (word) {
+    // tslint:disable-next-line: max-line-length
+    const isConstNumBytePositive = /^\+?([0-9]{1,4}|[1-2][0-9]{4}|[3][0-1][0-9]{3}|[3][2][0-6][0-9]{2}|[3][2][7][0-5][0-9]|[3][2][7][6][0-8])$/gm.test(word);
+    // tslint:disable-next-line: max-line-length
+    const isConstNumByteNegative = /^\-([0-9]{1,4}|[1-2][0-9]{4}|[3][0-1][0-9]{3}|[3][2][0-6][0-9]{2}|[3][2][7][0-5][0-9]|[3][2][7][6][0-7])$/gm.test(word);
+    const isConstNumByte = /^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/gm.test(word);
+    const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(word);
+    let isValidHexa = false;
+    if (isConstNumHexa) {
+      console.log(`Word is hexa: ${word} and value in hexa is: ${parseInt(word, 16)}`);
+      isValidHexa = parseInt(word, 16) < 65536;
+    }
+    const isBinary = /^[0-1]{0, 16}(b|B)?$/gm.test(word);
+    return isConstNumByte || isConstNumBytePositive || isConstNumByteNegative || (isConstNumHexa && isValidHexa) || isBinary;
   }
 
   isMemory(word) {
     // tslint:disable-next-line: max-line-length
-    const isMemoryT1 = /^(\[BX \+ SI( \+ d8)?\]|\[BX \+ DI( \+ d8)?\]|\[BP \+ SI( \+ d8)?\]|\[BP \+ DI( \+ d8)?\])|(\[SI\]|\[DI\]|d16|\[BX\])$/gm.test(word);
+    // const isMemoryT1 = /^(\[BX \+ SI( \+ d8)?\]|\[BX \+ DI( \+ d8)?\]|\[BP \+ SI( \+ d8)?\]|\[BP \+ DI( \+ d8)?\])|(\[SI\]|\[DI\]|d16|\[BX\])$/gm.test(word);
     // tslint:disable-next-line: max-line-length
-    const isMemoryT2 = /^(\[BX \+ SI( \+ d16)?\]|\[BX \+ DI( \+ d16)?\]|\[BP \+ SI( \+ d16)?\]|\[BP \+ DI( \+ d16)?\])|(\[SI( \+ (d8|d16))\]|\[DI( \+ (d8|d16))\]|\[BP( \+ (d8|d16))\]|\[BX( \+ (d8|d16))\])$/gm.test(word);
+    // const isMemoryT2 = /^(\[BX \+ SI( \+ d16)?\]|\[BX \+ DI( \+ d16)?\]|\[BP \+ SI( \+ d16)?\]|\[BP \+ DI( \+ d16)?\])|(\[SI( \+ (d8|d16))\]|\[DI( \+ (d8|d16))\]|\[BP( \+ (d8|d16))\]|\[BX( \+ (d8|d16))\])$/gm.test(word);
+    // tslint:disable-next-line: max-line-length
+
+    // const isT1 = /^\[BX \+ SI( \+ d8)?\]$/gm.test(word);
+    // const isT2 = /^\[BX \+ DI( \+ d8)?\]$/gm.test(word);
+    // const isT3 = /^\[BP \+ SI( \+ d8)?\]$/gm.test(word);
+    // const isT4 = /^\[BP \+ DI( \+ d8)?\]$/gm.test(word);
+    // const isT5 = /^(\[SI\]|\[DI\]|d16|\[BX\])$/gm.test(word);
+
+    // const isT6 = /^\[BX \+ SI( \+ d16)?\]$/gm.test(word);
+    // const isT7 = /^\[BX \+ DI( \+ d16)?\]$/gm.test(word);
+    // const isT8 = /^\[BP \+ SI( \+ d16)?\]$/gm.test(word);
+    // const isT9 = /^\[BP \+ DI( \+ d16)?\]$/gm.test(word);
+    // const isT10 = /^(\[SI( \+ (d8|d16))\]|\[DI( \+ (d8|d16))\]|\[BP( \+ (d8|d16))\]|\[BX( \+ (d8|d16))\])$/gm.test(word);
+
+    const isT1 = /^\[BX \+ SI( \+ ([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?|[0-1]{0, 8}(b|B)?))?\]$/gm.test(word);
+    const isT2 = /^\[BX \+ DI( \+ ([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?|[0-1]{0, 8}(b|B)?))?\]$/gm.test(word);
+    const isT3 = /^\[BP \+ SI( \+ ([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?|[0-1]{0, 8}(b|B)?))?\]$/gm.test(word);
+    const isT4 = /^\[BP \+ DI( \+ ([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?|[0-1]{0, 8}(b|B)?))?\]$/gm.test(word);
+    const isT5 = /^(\[SI\]|\[DI\]|d16|\[BX\])$/gm.test(word);
+
+    const isT6 = /^\[BX \+ SI( \+ d16)?\]$/gm.test(word);
+    const isT7 = /^\[BX \+ DI( \+ d16)?\]$/gm.test(word);
+    const isT8 = /^\[BP \+ SI( \+ d16)?\]$/gm.test(word);
+    const isT9 = /^\[BP \+ DI( \+ d16)?\]$/gm.test(word);
+    const isT10 = /^(\[SI( \+ (([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?|[0-1]{0, 8}(b|B)?)|d16))\]|\[DI( \+ (([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?|[0-1]{0, 8}(b|B)?)|d16))\]|\[BP(\+([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?|[0-1]{0, 8}(b|B)?))\]|\[BX( \+ (([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?|[0-1]{0, 8}(b|B)?)|d16))\])$/gm.test(word);
+
     const isVar = this.isVar(word);
-    return isMemoryT1 || isMemoryT2 || isVar;
+    return isT1 || isT2 || isT3 || isT4 || isT5 || isT6 || isT7 || isT8 || isT9 || isT10 || isVar;
   }
 
   isReg(word) {
@@ -211,6 +286,11 @@ export class HomePage implements OnInit, AfterViewChecked {
     }
   }
 
+  isLabel(word) {
+    const isVar = /^[a-zA-Z]{1}[a-zA-Z0-9]{0,9}:\s*?$/gm.test(word);
+    return isVar;
+  }
+
   isWhiteSpace(word) {
     return /^\s*$/gm.test(word);
   }
@@ -223,7 +303,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       console.log('Current address is: ', this.currentAddress);
       console.log('Current address IN HEX is: ', this.currentAddress.toString(16));
       this.table.push({
-        address: this.currentAddress,
+        address: this.currentAddress.toString(16).toUpperCase(),
         ...symbol
       });
       const size = symbol.size === 'db' ? 1 : 2;
@@ -529,7 +609,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         return `${line} -- Error: Se esperaba una etiqueta, en cambio hay un ${this.sRegs.includes(wordsInLine[1].toLowerCase()) ? 'SREG' : 'REG' }`;
       }
       if (!this.tags.includes(wordsInLine[1] + ':')) {
-        return `${line} -- Etiqueta no definida`;
+        return `${line} -- Error: Parámetro inválido, ${wordsInLine[1]}`;
       }
       return line + ' LÍNEA VÁLIDA';
     }
@@ -584,14 +664,14 @@ export class HomePage implements OnInit, AfterViewChecked {
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isMemory(wordsInLine[2])) {
           return `${line} LÍNEA VÁLIDA`;
-        } else if (this.isImmediate(wordsInLine[2])) {
+        } else if (this.isImmediateByte(wordsInLine[2])) {
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
       } else if (this.isMemory(wordsInLine[1])) {
         if (this.isReg(wordsInLine[2])) {
           return `${line} LÍNEA VÁLIDA`;
-        } else if (this.isImmediate(wordsInLine[2])) {
+        } else if (this.isImmediateByte(wordsInLine[2])) {
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
@@ -605,22 +685,55 @@ export class HomePage implements OnInit, AfterViewChecked {
       if (wordsInLine.length > 3) {
         return `${line} -- ERROR: La instrucción CMP solo puede tener 2 parámetros `;
       }
+      const isMatch = wordsInLine[2].match(/^\[BP\+34\]$/gm);
+      console.log('ISMATCH RESULT: ', isMatch);
       if (this.isReg(wordsInLine[1])) {
         if (this.isReg(wordsInLine[2])) {
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isMemory(wordsInLine[2])) {
           return `${line} LÍNEA VÁLIDA`;
-        } else if (this.isImmediate(wordsInLine[2])) {
+        } else if (this.isImmediateByte(wordsInLine[2])) {
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
       } else if (this.isMemory(wordsInLine[1])) {
         if (this.isReg(wordsInLine[2])) {
           return `${line} LÍNEA VÁLIDA`;
-        } else if (this.isImmediate(wordsInLine[2])) {
+        } else if (this.isImmediateByte(wordsInLine[2])) {
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
+      }
+      return `${line} -- ERROR: ${wordsInLine[1]} es un parámetro inválido`;
+    }
+    const isJnle = /^JNLE\s[^\s]+\s*$/gm.test(line);
+    if (isJnle) {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      console.log('Words for JNLE', wordsInLine);
+      if (wordsInLine.length > 2) {
+        return `${line} -- ERROR: La instrucción JNLE solo puede tener 1 parámetro `;
+      }
+      if (this.isVar(wordsInLine[1])) {
+        if (!this.tags.includes(wordsInLine[1] + ':')) {
+          return `${line} -- Error: Parámetro inválido, ${wordsInLine[1]}`;
+        }
+        return `${line} LÍNEA VÁLIDA`;
+      }
+      return `${line} -- ERROR: ${wordsInLine[1]} es un parámetro inválido`;
+    }
+
+    const isJa = /^JA\s[^\s]+\s*$/gm.test(line);
+    if (isJa) {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      console.log('Words for JA', wordsInLine);
+      if (wordsInLine.length > 2) {
+        return `${line} -- ERROR: La instrucción JA solo puede tener 1 parámetro `;
+      }
+      if (this.isVar(wordsInLine[1])) {
+        if (!this.tags.includes(wordsInLine[1] + ':')) {
+          return `${line} -- Error: Parámetro inválido, ${wordsInLine[1]}`;
+        }
+        return `${line} LÍNEA VÁLIDA`;
       }
       return `${line} -- ERROR: ${wordsInLine[1]} es un parámetro inválido`;
     }
