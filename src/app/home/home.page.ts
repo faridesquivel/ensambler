@@ -36,6 +36,7 @@ export class HomePage implements OnInit, AfterViewChecked {
   sRegs = ['ds', 'es', 'ss', 'cs'];
   table = [];
   tags = [];
+  wordTags = [];
 
   constructor(private cdRef: ChangeDetectorRef) {}
 
@@ -94,25 +95,25 @@ export class HomePage implements OnInit, AfterViewChecked {
         }
         let newWord = '';
         let mustClose = false;
-        for (let index = 0; index < String(leftLine).length; index++) {
+        for (let index = 0; index < String(line).length; index++) {
           if (mustClose === false) {
-            if (String(leftLine).charAt(index) === ' ' || String(leftLine).charAt(index) === ',') {
+            if (String(line).charAt(index) === ' ' || String(line).charAt(index) === ',') {
               this.allWords.push(newWord);
               newWord = '';
-            } else if (index === String(leftLine).length - 1) {
-              newWord += String(leftLine).charAt(index);
+            } else if (index === String(line).length - 1) {
+              newWord += String(line).charAt(index);
               this.allWords.push(newWord);
               newWord = '';
             } else {
-              if (String(leftLine).charAt(index) === '"') {
+              if (String(line).charAt(index) === '"' || String(line).charAt(index) === "'") {
                 mustClose = true;
               }
-              newWord += String(leftLine).charAt(index);
+              newWord += String(line).charAt(index);
             }
           } else {
-            if (String(leftLine).charAt(index) === '"') {
-              newWord += String(leftLine).charAt(index);
-              if (String(leftLine).charAt(index + 1) && String(leftLine).charAt(index + 1) === ')') {
+            if (String(line).charAt(index) === '"' || String(line).charAt(index) === "'") {
+              newWord += String(line).charAt(index);
+              if (String(line).charAt(index + 1) && String(line).charAt(index + 1) === ')') {
                 console.log('The next element is ), current saved words are: ', newWord);
                 mustClose = false;
               } else {
@@ -120,13 +121,13 @@ export class HomePage implements OnInit, AfterViewChecked {
                 this.allWords.push(newWord);
                 newWord = '';
               }
-            } else if (index === String(leftLine).length - 1) {
-              newWord += String(leftLine).charAt(index);
+            } else if (index === String(line).length - 1) {
+              newWord += String(line).charAt(index);
               console.log('Will have to push new word since line ended with " activated', newWord);
               this.allWords.push(newWord);
               newWord = '';
             } else {
-              newWord += String(leftLine).charAt(index);
+              newWord += String(line).charAt(index);
             }
           }
         }
@@ -473,7 +474,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       return word + ' -- es una INSTRUCCIÓN';
     }
     if (this.registros.includes(word.toLowerCase())) {
-      return word + ' -- es un REG';
+      return word + ' -- es un REGISTRO';
     }
     if (this.sRegs.includes(word.toLowerCase())) {
       return word + ' -- es un SREG';
@@ -488,13 +489,17 @@ export class HomePage implements OnInit, AfterViewChecked {
     if (isMemoryT2) {
       return word + ' -- es una REFERENCIA DE MEMORIA';
     }
-    const isVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(word);
-    if (isVar) {
-      return word + ' -- es una VARIABLE';
-    }
     const isTag = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}:$/gm.test(word);
     if (isTag) {
+      this.wordTags.push(word);
       return word + ' -- es una ETIQUETA';
+    }
+    const isVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(word);
+    if (isVar) {
+      if (this.wordTags.includes(word + ':')) {
+        return word + ' -- es una ETIQUETA';
+      }
+      return word + ' -- es una VARIABLE';
     }
     const isConstNumByteNegative = /^[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0\s*$/gm.test(word);
     if (isConstNumByteNegative === true) { return word + ' -- es un INMEDIATO'; }
@@ -515,14 +520,14 @@ export class HomePage implements OnInit, AfterViewChecked {
   analizeWordWithRegex(word) {
     const isDupWithByte = /dup\(([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5])\)\s*$/gm.test(word);
     if (isDupWithByte === true) {
-      return word + ' -- es un dup o elemento compuesto con byte';
+      return word + ' -- son PSEUDOINSTRUCCIÓN y constante numérica';
     }
     const isDupWithChar = /dup\(("[^"]*"|'[^']*')\)\s*$/gm.test(word);
-    if (isDupWithChar === true) { return word + ' -- es un dup o elemento compuesto con caracter'; }
+    if (isDupWithChar === true) { return word + ' -- son PSEUDOINSTRUCCIÓN y constante caracter'; }
     const isDupWithHexa = /dup\((\b([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})\b\s*|^0x[0-9a-fA-F]{1,4})\)\s*$/gm.test(word);
-    if (isDupWithHexa === true) { return word + ' -- es un dup o elemento compuesto con hexadecimal'; }
+    if (isDupWithHexa === true) { return word + ' -- son PSEUDOINSTRUCCIÓN y constante numérica'; }
     const isSize = /(db|dw|equ)/gm.test(word);
-    if (isSize === true) { return word + ' -- es un símbolo de tamaño'; }
+    if (isSize === true) { return word + ' -- es PSEUDOINSTRUCCIÓN'; }
     const isVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(word);
     if (isVar === true) { return word + ' -- es un símbolo de variable'; }
     const isConstNumByteNegative = /^[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0\s*$/gm.test(word);
