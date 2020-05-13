@@ -231,6 +231,29 @@ export class HomePage implements OnInit, AfterViewChecked {
     return isConstNumByte || isConstNumBytePositive || isConstNumByteNegative || (isConstNumHexa && isValidHexa) || isBinary;
   }
 
+  isBinaryByte(word) {
+    const isBinary = /^[0-1]{0,8}(b|B)?$/gm.test(word);
+    return isBinary;
+  }
+
+  isBinaryWord(word) {
+    const isBinary = /^[0-1]{0, 16}(b|B)?$/gm.test(word);
+    return isBinary;
+  }
+
+  isHexa(word) {
+    const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(word);
+    return isConstNumHexa;
+  }
+
+  isHexaByte(word) {
+    return parseInt(word, 16) < 255;
+  }
+
+  isHexaWord(word) {
+      return parseInt(word, 16) < 65536;
+  }
+
   isMemory(word) {
     // tslint:disable-next-line: max-line-length
     // const isMemoryT1 = /^(\[BX \+ SI( \+ d8)?\]|\[BX \+ DI( \+ d8)?\]|\[BP \+ SI( \+ d8)?\]|\[BP \+ DI( \+ d8)?\])|(\[SI\]|\[DI\]|d16|\[BX\])$/gm.test(word);
@@ -304,7 +327,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         address: this.currentAddress.toString(16).toUpperCase(),
         ...symbol
       });
-    } else {
+    } else if (symbol.type === 'Variable') {
       console.log('Current address is: ', this.currentAddress);
       console.log('Current address IN HEX is: ', this.currentAddress.toString(16));
       this.table.push({
@@ -314,13 +337,61 @@ export class HomePage implements OnInit, AfterViewChecked {
       const size = symbol.size === 'db' ? 1 : 2;
 
       // tslint:disable-next-line: max-line-length
-      const valor = symbol.value.length === 1 ? (isNaN(symbol.value[0]) ? (String(symbol.value[0]).length - 2) : size) : (size * symbol.value[0]);
+      let valor;
       if (symbol.value.length === 1) {
-        
+        if (isNaN(symbol.value[0])) {
+          if (this.isHexa(symbol.value[0])) {
+            valor = size;
+          } else {
+            valor = String(symbol.value[0]).length - 2;
+            console.log(`NO ES NAN El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
+          }
+        } else {
+          valor = size;
+          console.log(`ES NAN El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
+        }
       } else {
-        
+        if (symbol.size === 'db') {
+          if (this.isBinaryByte(symbol.value[0])) {
+            valor = size * parseInt(symbol.value[0], 2);
+            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
+          }
+        } else {
+          if (this.isBinaryWord(symbol.value[0])) {
+            valor = size * parseInt(symbol.value[0], 2);
+            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
+          } else {
+            valor = size * symbol.value[0];
+            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
+          }
+        }
       }
-      console.log(`El valor para ${symbol.value} es: ${valor}, ya que `);
+      this.currentAddress += valor;
+    } else if (symbol.type === 'Stack Variable') {
+      let valor;
+      this.table.push({
+        address: this.currentAddress.toString(16).toUpperCase(),
+        ...symbol
+      });
+      const size = symbol.size === 'db' ? 1 : 2;
+      if (symbol.value.length === 1) {
+        valor = size;
+      } else {
+        if (symbol.size === 'db') {
+          if (this.isBinaryByte(symbol.value[0])) {
+            valor = size * parseInt(symbol.value[0], 2);
+            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
+          }
+        } else {
+          if (this.isBinaryWord(symbol.value[0])) {
+            valor = size * parseInt(symbol.value[0], 2);
+            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
+          } else {
+            valor = size * symbol.value[0];
+            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
+          }
+        }
+      }
       this.currentAddress += valor;
     }
   }
