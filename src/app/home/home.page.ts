@@ -6,10 +6,12 @@ import { Component, OnInit, ChangeDetectorRef, AfterViewChecked } from '@angular
   styleUrls: ['home.page.scss'],
 })
 export class HomePage implements OnInit, AfterViewChecked {
+  analizedLines = [];
   allLines: string[] = [];
   allWords: string[] = [];
   currentAddress = 0;
   currentSegment: string = null;
+  mustReturnZero = false;
   lastSegmentInit = '';
   loading = false;
   files: File[] = [];
@@ -131,6 +133,13 @@ export class HomePage implements OnInit, AfterViewChecked {
             }
           }
         }
+        // tslint:disable-next-line: prefer-for-of
+        // for (let index = 0; index < this.allLines.length; index++) {
+        //   const element = this.analizeLine(this.allLines[index]);
+        //   if (!this.lineIsContained(element)) {
+        //     this.analizedLines.push(element);
+        //   }
+        // }
       });
     };
 
@@ -164,6 +173,18 @@ export class HomePage implements OnInit, AfterViewChecked {
     // tslint:disable-next-line: prefer-for-of
     for (let index = 0; index < this.table.length; index++) {
       if (this.table[index].symbol === obj.symbol) {
+        contains = true;
+      }
+    }
+    return contains;
+  }
+
+  lineIsContained(obj) {
+    let contains = false;
+    // tslint:disable-next-line: prefer-for-of
+    for (let index = 0; index < this.table.length; index++) {
+      console.log('Will compare ', obj, ' with ', this.analizedLines[index])
+      if (this.analizedLines[index] === obj) {
         contains = true;
       }
     }
@@ -730,8 +751,9 @@ export class HomePage implements OnInit, AfterViewChecked {
           commentFound = true;
         }
       }
+      console.log(`Linea: ${line} sea analizará en ${this.currentSegment} y nos encontramos en la dirección: ${this.currentAddress}`);
       if (this.currentSegment === 'data segment') {
-        return this.analizaDataSegment(leftLine);
+        return this.analizaDataSegment(leftLine, this.currentAddress);
       } else if (this.currentSegment === 'stack segment') {
         return this.analizaStackSegment(leftLine);
       } else if (this.currentSegment === 'code segment') {
@@ -741,15 +763,15 @@ export class HomePage implements OnInit, AfterViewChecked {
     return line + ' es correcta';
   }
 
-  analizaDataSegment(line) {
+  analizaDataSegment(line, currentAddress) {
     // tslint:disable-next-line: max-line-length
     const regex = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}\s(db\s(dup\(([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$|"[^"]*"|'[^']*'|[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(?:[a-fA-F0–9]{6}|[a-fA-F0–9]{3}))\s*?$|dw\s(("[^"]*"|'[^']*')|("[^"]*"|'[^']*')\sdup\(("[^"]*"|'[^']*')\))\s*?$|equ\s("[^"]*"|'[^']*')\s*$)/gm.test(line);
-    console.log('Regex is: ', regex, ' for line: ', line);
+    console.log('ADS Regex is: ', regex, ' for line: ', line, 'and the address is: ', currentAddress);
     if (regex === false) {
       return this.analizeLineWithDataSegment(line);
     }
     this.addDSLineToTable(line);
-    return line + ' LÍNEA VÁLIDA';
+    return currentAddress + ' - ' + line + ' LÍNEA VÁLIDA';
   }
 
   analizeLineWithDataSegment(ut) {

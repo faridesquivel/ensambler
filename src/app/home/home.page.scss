@@ -83,3 +83,7 @@ ngx-dropzone-label {
 .block {
   display: block;
 }
+.version {
+  font-size: 10px;
+  color: lighten($color: #000000, $amount: 50);
+}
