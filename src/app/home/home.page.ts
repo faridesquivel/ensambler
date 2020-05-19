@@ -414,6 +414,32 @@ export class HomePage implements OnInit, AfterViewChecked {
         }
       }
       this.currentAddress += valor;
+    } else if (symbol.type === 'Instrucción') {
+      let valor;
+      console.log(`Se añadirá la sig instruccion ${symbol}`);
+      this.table.push({
+        address: this.currentAddress.toString(16).toUpperCase(),
+        ...symbol
+      });
+      if (symbol.symbol.toUpperCase() === 'AAM') {
+        valor = 2;
+      } else if (symbol.symbol.toUpperCase() === 'CMPSB') {
+        valor = 1;
+      } else if (symbol.symbol.toUpperCase() === 'POPF') {
+        valor = 1;
+      } else if (symbol.symbol.toUpperCase() === 'STI') {
+        valor = 1;
+      } else if (symbol.symbol.toUpperCase() === 'INT') {
+        valor = 2;
+      } else if (symbol.symbol.toUpperCase() === 'JG' || symbol.symbol.toUpperCase() === 'JNB') {
+        valor = 4;
+      }
+      this.currentAddress += valor;
+    } else if (symbol.type === 'Etiqueta') {
+      this.table.push({
+        address: this.currentAddress.toString(16).toUpperCase(),
+        ...symbol
+      });
     }
   }
 
@@ -583,10 +609,51 @@ export class HomePage implements OnInit, AfterViewChecked {
       const symbol = {
         symbol: wordsInLine[0],
         type: 'Instrucción',
-        value: [0],
+        value: ['-'],
         size: '-'
       };
-      this.addToTable(symbol);
+      if (!this.contains(symbol)) {
+        this.addToTable(symbol);
+      }
+    }
+
+    const isTag = /^[a-zA-Z]{1}[a-zA-Z0-9]{0,9}:\s*?$/gm.test(wordsInLine[0]);
+    if (isTag === true) {
+      const symbol = {
+        symbol: wordsInLine[0],
+        type: 'Etiqueta',
+        value: ['-'],
+        size: '-'
+      };
+      if (!this.contains(symbol)) {
+        this.addToTable(symbol);
+      }
+    }
+    // tslint:disable-next-line: max-line-length
+    const isInt = /^INT\s([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*)$/gm.test(untrimmedLine);
+    if (isInt) {
+      const symbol = {
+        symbol: wordsInLine[0],
+        type: 'Instrucción',
+        value: ['-'],
+        size: '-'
+      };
+      if (!this.contains(symbol)) {
+        this.addToTable(symbol);
+      }
+    }
+
+    const isJNBorJG = /^(JNB\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9}|JG\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})\s*?$/gm.test(untrimmedLine);
+    if (isJNBorJG) {
+      const symbol = {
+        symbol: wordsInLine[0],
+        type: 'Instrucción',
+        value: ['-'],
+        size: '-'
+      };
+      if (!this.contains(symbol)) {
+        this.addToTable(symbol);
+      }
     }
   }
 
@@ -728,6 +795,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       } else {
         this.mustEnd = true;
         this.currentSegment = line.valueOf();
+        this.currentAddress = 0;
         return line + ' inicio de segmento \n';
       }
     }
@@ -771,7 +839,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       return this.analizeLineWithDataSegment(line);
     }
     this.addDSLineToTable(line);
-    return currentAddress + ' - ' + line + ' LÍNEA VÁLIDA';
+    return line + ' LÍNEA VÁLIDA';
   }
 
   analizeLineWithDataSegment(ut) {
@@ -931,14 +999,16 @@ export class HomePage implements OnInit, AfterViewChecked {
     // const regex = line.matches("[a-zA-Z][a-zA-Z]+\\s(db|dw|equ),*\\s[A-Z][a-zA-Z]*");
     const regex = /^(AAM|CMPSB|POPF|STI)\s*?$/gm.test(line);
     const isTag = /^[a-zA-Z]{1}[a-zA-Z0-9]{0,9}:\s*?$/gm.test(line);
-    const isJNBorJG = /^(JNB\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9}|JG\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})\s*?$/gm.test(line);
     if (isTag === true) {
       this.tags.push(line);
+      this.addCSLineToTable(line);
       return line + ' linea válida';
     }
     if (regex === true) {
+      this.addCSLineToTable(line);
       return line + ' LÍNEA VÁLIDA';
     }
+    const isJNBorJG = /^(JNB\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9}|JG\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})\s*?$/gm.test(line);
     if (isJNBorJG) {
       const wordsInLine = line.trim().split(/\s+/g);
       if (this.sRegs.includes(wordsInLine[1].toLowerCase()) || this.registros.includes(wordsInLine[1].toLowerCase())) {
@@ -948,17 +1018,27 @@ export class HomePage implements OnInit, AfterViewChecked {
       if (!this.tags.includes(wordsInLine[1] + ':')) {
         return `${line} -- Error: Parámetro inválido, ${wordsInLine[1]}`;
       }
+      this.addCSLineToTable(line);
       return line + ' LÍNEA VÁLIDA';
     }
     // tslint:disable-next-line: max-line-length
     const isInt = /^INT\s([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*)$/gm.test(line);
     if (isInt) {
+      console.log('FOUND INT!! :', line);
       const wordsInLine = line.trim().split(/\s+/g);
+      console.log('FOUND INT!! SPLITED:', wordsInLine);
       const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(wordsInLine[1]);
       if (isConstNumHexa === true) {
+        console.log('FOUND INT!! INSIDE IS HEXA:', line);
         if (parseInt(wordsInLine[1], 16) > 255) {
           return line + ' -- ERROR: Constante numérica inválida';
         }
+        console.log('FOUND INT!! HEXAVALID:', line);
+        this.addCSLineToTable(line);
+        return line + ' LÍNEA VÁLIDA';
+      } else {
+        console.log('FOUND INT!! OUTSIDE HEXA:', line);
+        this.addCSLineToTable(line);
         return line + ' LÍNEA VÁLIDA';
       }
     }
@@ -1074,7 +1154,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       }
       return `${line} -- ERROR: ${wordsInLine[1]} es un parámetro inválido`;
     }
-    // this.addCSLineToTable(line);
+    this.addCSLineToTable(line);
     return this.analizeCodeSegmentLine(line);
   }
 
