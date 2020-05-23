@@ -4,7 +4,7 @@
       Ensamblador <br> 
       <span class="names">Erick Farid González Esquivel</span><br> 
       <span class="names">Sergio Martínez de Jesús</span><br>
-      <span class="version">v3.2</span>
+      <span class="version">v3.3</span>
     </ion-title>
     <ion-buttons slot="end">
       <ion-button
@@ -47,7 +47,7 @@
           <strong>Identificación de elementos</strong>
         </ion-card-header>
         <ion-card-content class="cardWithOverflow" class="ion-justify-content-center">
-          <ion-text class="block" *ngFor="let word of allWords; let i = index">{{ analizeWord(word) }}</ion-text>
+          <ion-text class="block" *ngFor="let word of allWords">{{ analizeWord(word) }}</ion-text>
         </ion-card-content>
       </ion-card>
     </ion-col>
@@ -57,7 +57,7 @@
           <strong>Análisis sintáctico</strong>
         </ion-card-header>
         <ion-card-content class="cardWithOverflow" class="ion-justify-content-center">
-          <ion-text class="block" *ngFor="let line of allLines">{{ analizeLine(line) }}</ion-text>
+          <ion-text class="block" *ngFor="let line of allLines; let i = index">{{ (counter && counter[i]) && setHexAddress(counter[i].count) }} - {{ analizeLine(line, i) }}</ion-text>
         </ion-card-content>
       </ion-card>
     </ion-col>

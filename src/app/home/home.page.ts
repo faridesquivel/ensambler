@@ -9,6 +9,7 @@ export class HomePage implements OnInit, AfterViewChecked {
   analizedLines = [];
   allLines: string[] = [];
   allWords: string[] = [];
+  counter = [];
   currentAddress = 0;
   currentSegment: string = null;
   mustReturnZero = false;
@@ -59,15 +60,12 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   onSelect(event) {
     this.loading = true;
-    console.log(event);
     this.files.push(...event.addedFiles);
     const file = this.files[0];
     const reader = new FileReader();
 
     reader.onload = (ev: any) => {
-      console.log('Event is ready: ', ev);
       const ff = ev.target.result;
-      console.log(ff);
       this.selectedFile = ff;
       const allLines = ff.toString().split(/\r\n|\n/);
       this.allLines = allLines;
@@ -116,7 +114,6 @@ export class HomePage implements OnInit, AfterViewChecked {
             if (String(line).charAt(index) === '"' || String(line).charAt(index) === "'") {
               newWord += String(line).charAt(index);
               if (String(line).charAt(index + 1) && String(line).charAt(index + 1) === ')') {
-                console.log('The next element is ), current saved words are: ', newWord);
                 mustClose = false;
               } else {
                 mustClose = false;
@@ -125,7 +122,6 @@ export class HomePage implements OnInit, AfterViewChecked {
               }
             } else if (index === String(line).length - 1) {
               newWord += String(line).charAt(index);
-              console.log('Will have to push new word since line ended with " activated', newWord);
               this.allWords.push(newWord);
               newWord = '';
             } else {
@@ -133,13 +129,6 @@ export class HomePage implements OnInit, AfterViewChecked {
             }
           }
         }
-        // tslint:disable-next-line: prefer-for-of
-        // for (let index = 0; index < this.allLines.length; index++) {
-        //   const element = this.analizeLine(this.allLines[index]);
-        //   if (!this.lineIsContained(element)) {
-        //     this.analizedLines.push(element);
-        //   }
-        // }
       });
     };
 
@@ -154,7 +143,6 @@ export class HomePage implements OnInit, AfterViewChecked {
   }
 
   onRemove(event) {
-    console.log(event);
     this.files.splice(this.files.indexOf(event), 1);
   }
 
@@ -188,7 +176,6 @@ export class HomePage implements OnInit, AfterViewChecked {
     let contains = false;
     // tslint:disable-next-line: prefer-for-of
     for (let index = 0; index < this.table.length; index++) {
-      console.log('Will compare ', obj, ' with ', this.analizedLines[index])
       if (this.analizedLines[index] === obj) {
         contains = true;
       }
@@ -222,7 +209,6 @@ export class HomePage implements OnInit, AfterViewChecked {
     const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(word);
     let isValidHexa = false;
     if (isConstNumHexa) {
-      console.log(`Word is hexa: ${word} and value in hexa is: ${parseInt(word, 16)}`);
       isValidHexa = parseInt(word, 16) < 65536;
     }
     return isConstNumByte || isConstNumBytePositive || isConstNumByteNegative || (isConstNumHexa && isValidHexa) || isImmediateWord;
@@ -234,7 +220,6 @@ export class HomePage implements OnInit, AfterViewChecked {
     const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(word);
     let isValidHexa = false;
     if (isConstNumHexa) {
-      console.log(`Word is hexa: ${word} and value in hexa is: ${parseInt(word, 16)}`);
       isValidHexa = parseInt(word, 16) < 255;
     }
     const isBinary = /^[0-1]{0,8}(b|B)?$/gm.test(word);
@@ -250,7 +235,6 @@ export class HomePage implements OnInit, AfterViewChecked {
     const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(word);
     let isValidHexa = false;
     if (isConstNumHexa) {
-      console.log(`Word is hexa: ${word} and value in hexa is: ${parseInt(word, 16)}`);
       isValidHexa = parseInt(word, 16) < 65536;
     }
     const isBinary = /^[0-1]{0, 16}(b|B)?$/gm.test(word);
@@ -347,15 +331,12 @@ export class HomePage implements OnInit, AfterViewChecked {
 
 
   addToTable(symbol) {
-    console.log('Will add to table: ', symbol);
     if (symbol.type === 'Constante') {
       this.table.push({
         address: this.currentAddress.toString(16).toUpperCase(),
         ...symbol
       });
     } else if (symbol.type === 'Variable') {
-      console.log('Current address is: ', this.currentAddress);
-      console.log('Current address IN HEX is: ', this.currentAddress.toString(16));
       this.table.push({
         address: this.currentAddress.toString(16).toUpperCase(),
         ...symbol
@@ -370,25 +351,20 @@ export class HomePage implements OnInit, AfterViewChecked {
             valor = size;
           } else {
             valor = String(symbol.value[0]).length - 2;
-            console.log(`NO ES NAN El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
           }
         } else {
           valor = size;
-          console.log(`ES NAN El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
         }
       } else {
         if (symbol.size === 'db') {
           if (this.isBinaryByte(symbol.value[0])) {
             valor = size * parseInt(symbol.value[0], 2);
-            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
           }
         } else {
           if (this.isBinaryWord(symbol.value[0])) {
             valor = size * parseInt(symbol.value[0], 2);
-            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
           } else {
             valor = size * symbol.value[0];
-            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
           }
         }
       }
@@ -406,22 +382,18 @@ export class HomePage implements OnInit, AfterViewChecked {
         if (symbol.size === 'db') {
           if (this.isBinaryByte(symbol.value[0])) {
             valor = size * parseInt(symbol.value[0], 2);
-            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
           }
         } else {
           if (this.isBinaryWord(symbol.value[0])) {
             valor = size * parseInt(symbol.value[0], 2);
-            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
           } else {
             valor = size * symbol.value[0];
-            console.log(`El valor para ${symbol.value} es: ${valor}, ya que symbol.value es ${symbol.value[0]} y size es ${size}`);
           }
         }
       }
       this.currentAddress += valor;
     } else if (symbol.type === 'Instrucción') {
       let valor;
-      console.log(`Se añadirá la sig instruccion ${symbol}`);
       this.table.push({
         address: this.currentAddress.toString(16).toUpperCase(),
         ...symbol
@@ -482,7 +454,6 @@ export class HomePage implements OnInit, AfterViewChecked {
         if (String(line).charAt(index) === '"' || String(line).charAt(index) === "'") {
           newWord += String(line).charAt(index);
           if (String(line).charAt(index + 1) && String(line).charAt(index + 1) === ')') {
-            console.log('The next element is ), current saved words are: ', newWord);
             mustClose = false;
           } else {
             mustClose = false;
@@ -491,7 +462,6 @@ export class HomePage implements OnInit, AfterViewChecked {
           }
         } else if (index === String(line).length - 1) {
           newWord += String(line).charAt(index);
-          console.log('Will have to push new word since line ended with " activated', newWord);
           wordsInLine.push(newWord);
           newWord = '';
         } else {
@@ -500,7 +470,6 @@ export class HomePage implements OnInit, AfterViewChecked {
       }
     }
     let symbol = {};
-    console.log('Words in line are:', wordsInLine);
     if (wordsInLine[1] === 'equ') {
       symbol = {
         symbol: wordsInLine[0],
@@ -510,7 +479,6 @@ export class HomePage implements OnInit, AfterViewChecked {
       };
     } else {
       if (wordsInLine[1] === 'db') {
-        console.log('Se agregará a tabla de DBs', line);
         symbol = {
           symbol: wordsInLine[0],
           type: 'Variable',
@@ -518,7 +486,6 @@ export class HomePage implements OnInit, AfterViewChecked {
           size: wordsInLine[1]
         };
       } else if (wordsInLine[1] === 'dw') {
-        console.log('Se agregará a tabla de DWs', line);
         symbol = {
           symbol: wordsInLine[0],
           type: 'Variable',
@@ -527,11 +494,9 @@ export class HomePage implements OnInit, AfterViewChecked {
         };
       }
     }
-    console.log('Se añadiría a la tabla: ', line);
     if (!this.contains(symbol)) {
       this.addToTable(symbol);
     }
-    console.log('Got into addDSLine, new table is: ', this.table);
   }
 
   addSSLineToTable(untrimmedLine) {
@@ -568,7 +533,6 @@ export class HomePage implements OnInit, AfterViewChecked {
       }
     }
     let symbol = {};
-    console.log('Words in line are:', wordsInLine);
     symbol = {
       symbol: '- Stack Segment Symbol -',
       type: 'Stack Variable',
@@ -578,48 +542,11 @@ export class HomePage implements OnInit, AfterViewChecked {
     if (!this.contains(symbol)) {
       this.addToTable(symbol);
     }
-    console.log('Got into addDSLine, new table is: ', this.table);
   }
 
   addCSLineToTable(untrimmedLine) {
-    /* const wordsInLine = [];
-    let newWord = '';
-    let mustClose = false;
-    console.log('WILL ADD LINE TO TABLE: ', line);
-    const lineSize = line.length;
-    console.log('Tmaño: ', lineSize);
-    for (let index = 0; index < line.length; index++) {
-      const element = String(line).charAt(index);
-      console.log('Char verifying: ', element);
-      if (element === ' ') {
-        if (mustClose === true) {
-          newWord += element;
-        } else {
-          console.log('Will push: ', newWord);
-          wordsInLine.push(newWord);
-          newWord = '';
-        }
-      } else if (element === '"') {
-        if (mustClose === false) {
-          mustClose = true;
-          newWord += element;
-        } else {
-          newWord += element;
-          wordsInLine.push(newWord);
-          newWord = '';
-        }
-      } else {
-        if (index === (lineSize - 1)) {
-          newWord += element;
-          wordsInLine.push(newWord);
-        } else {
-          newWord += element;
-        }
-      }
-    } */
     const wordsInLine = untrimmedLine.trim().split(/\s+/g);
     const isUniqueInstruction = /^(AAM|CMPSB|POPF|STI)$/gm.test(wordsInLine[0]);
-    console.log('IS UNIQUE INSTRUCTION: ', untrimmedLine, isUniqueInstruction);
     if (isUniqueInstruction) {
       const symbol = {
         symbol: wordsInLine[0],
@@ -699,7 +626,6 @@ export class HomePage implements OnInit, AfterViewChecked {
   }
 
   analizeWord(word) {
-    console.log('Word is: ', word, this.mustEndWord);
     word.trim();
     if (this.isWhiteSpace(word)) {
       return;
@@ -821,7 +747,20 @@ export class HomePage implements OnInit, AfterViewChecked {
     return word + ' -- elemento inválido';
   }
 
-  analizeLine(untrimmedLine) {
+  containsAddress(i) {
+    // tslint:disable-next-line: prefer-for-of
+    for (let index = 0; index < this.counter.length; index++) {
+      if (this.counter[index].index === i) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  analizeLine(untrimmedLine, index) {
+    if (!this.containsAddress(index)) {
+      this.counter.push({ index, count: this.currentAddress.toString(16).toUpperCase() });
+    }
     const line = untrimmedLine.trim();
     if (this.isWhiteSpace(line)) {
       return;
@@ -836,13 +775,13 @@ export class HomePage implements OnInit, AfterViewChecked {
       } else {
         this.mustEnd = true;
         this.currentSegment = line.valueOf();
-        this.currentAddress = 0;
         return line + ' inicio de segmento \n';
       }
     }
     if (this.isEnd(line)) {
       if (this.mustEnd === true) {
         this.mustEnd = false;
+        this.currentAddress = 0;
         return line + ' fin de segmento \n';
       } else {
         return line + ' -- Error: Para usar fin de segmento se necesita iniciar un segmento \n';
@@ -860,7 +799,6 @@ export class HomePage implements OnInit, AfterViewChecked {
           commentFound = true;
         }
       }
-      console.log(`Linea: ${line} sea analizará en ${this.currentSegment} y nos encontramos en la dirección: ${this.currentAddress}`);
       if (this.currentSegment === 'data segment') {
         return this.analizaDataSegment(leftLine, this.currentAddress);
       } else if (this.currentSegment === 'stack segment') {
@@ -875,7 +813,6 @@ export class HomePage implements OnInit, AfterViewChecked {
   analizaDataSegment(line, currentAddress) {
     // tslint:disable-next-line: max-line-length
     const regex = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}\s(db\s(dup\(([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$|"[^"]*"|'[^']*'|[-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(?:[a-fA-F0–9]{6}|[a-fA-F0–9]{3}))\s*?$|dw\s(("[^"]*"|'[^']*')|("[^"]*"|'[^']*')\sdup\(("[^"]*"|'[^']*')\))\s*?$|equ\s("[^"]*"|'[^']*')\s*$)/gm.test(line);
-    console.log('ADS Regex is: ', regex, ' for line: ', line, 'and the address is: ', currentAddress);
     if (regex === false) {
       return this.analizeLineWithDataSegment(line);
     }
@@ -909,7 +846,6 @@ export class HomePage implements OnInit, AfterViewChecked {
         if (String(line).charAt(index) === '"' || String(line).charAt(index) === "'") {
           newWord += String(line).charAt(index);
           if (String(line).charAt(index + 1) && String(line).charAt(index + 1) === ')') {
-            console.log('The next element is ), current saved words are: ', newWord);
             mustClose = false;
           } else {
             mustClose = false;
@@ -918,7 +854,6 @@ export class HomePage implements OnInit, AfterViewChecked {
           }
         } else if (index === String(line).length - 1) {
           newWord += String(line).charAt(index);
-          console.log('Will have to push new word since line ended with " activated', newWord);
           wordsInLine.push(newWord);
           newWord = '';
         } else {
@@ -926,7 +861,6 @@ export class HomePage implements OnInit, AfterViewChecked {
         }
       }
     }
-    console.log('WORDS IN LINEFOR SYNTATIC are: ', wordsInLine);
 
     const badVar = /^\s*?[a-zA-Z]{1}[a-zA-Z0-9]{0,9}$/gm.test(wordsInLine[0]);
     const badSize = /(db|dw)$/gm.test(wordsInLine[1]);
@@ -936,7 +870,6 @@ export class HomePage implements OnInit, AfterViewChecked {
     const badEquConst = /("[^"]*"|'[^']*')\s*$/gm.test(wordsInLine[2]);
     const badWordConst = this.isImmediateWord(wordsInLine[2]);
     if (wordsInLine.length === 3) {
-      console.log('After reviewing ', wordsInLine, ' barVar, barSize and badConst are:', badVar, badSize, badConst);
       if (wordsInLine[1] === 'equ') {
         if (badVar === false) {
           return line + ' -- Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
@@ -952,7 +885,6 @@ export class HomePage implements OnInit, AfterViewChecked {
           } else if (badSize === false) {
             return line + ' -- Error en: ' + wordsInLine[1] + ', el tamaño declarado no es válido';
           } else if (!this.isImmediateWord(wordsInLine[2])) {
-            console.log('SEREVISA', wordsInLine[2])
             return line + ' -- Error en: ' + wordsInLine[2] + ', constante inválida';
           }
           this.addDSLineToTable(line);
@@ -969,7 +901,6 @@ export class HomePage implements OnInit, AfterViewChecked {
       }
     } else if (wordsInLine.length === 4) {
       const badDup = /^dup\(([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
-      console.log('After reviewing ', wordsInLine, ' barVar, barSize, badConst and badDup are:', badVar, badSize, badConst, badDup);
       if (badVar === false) {
         return line + ' -- Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
       } else if (badSize === false) {
@@ -983,7 +914,6 @@ export class HomePage implements OnInit, AfterViewChecked {
       return line + ' LÍNEA VÁLIDA';
     } else if (wordsInLine.length > 4) {
       const badDup = /^dup\(([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|"[^"]*"|'[^']*')\)\s*$/gm.test(wordsInLine[3]);
-      console.log('After reviewing ', wordsInLine, ' barVar, barSize, badConst and badDup are:', badVar, badSize, badConst, badDup);
       if (badVar === false) {
         return line + ' -- Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
       } else if (badSize === false) {
@@ -1001,7 +931,6 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   analizaStackSegment(line) {
     const regex = /^\s*?dw\s+("[^"]*"\s*|'[^']*'\s*|\d{1,5})\s*dup\(("[^"]*"\s*|'[^']*'\s*|\d{1,5})\)\s*$/gm.test(line);
-    console.log('Regex is: ', regex, ' for line: ', line);
     if (regex === false) {
       return this.analizeLineWithStackSegment(line);
     }
@@ -1011,7 +940,6 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   analizaStackSegmentWords(line) {
     const regex = /^\s*?dw\s+("[^"]*"\s*|'[^']*'\s*|\d{1,5})\s*dup\(("[^"]*"\s*|'[^']*'\s*|\d{1,5})\)\s*$/gm.test(line);
-    console.log('Regex is: ', regex, ' for line: ', line);
     if (regex === false) {
       return this.analizeLineWithStackSegment(line);
     }
@@ -1020,7 +948,6 @@ export class HomePage implements OnInit, AfterViewChecked {
 
   analizeLineWithStackSegment(line) {
     const wordsInLine = line.trim().split(/\s/g).filter(a => a !== '');
-    console.log('Words in stack segment: ', wordsInLine);
     if (wordsInLine.length === 3) {
       const badSize = /^dw$/gm.test(wordsInLine[0]);
       const badConst = /("[^"]*"|'[^']*'|\d{1,5})/gm.test(wordsInLine[1]);
@@ -1065,20 +992,15 @@ export class HomePage implements OnInit, AfterViewChecked {
     // tslint:disable-next-line: max-line-length
     const isInt = /^INT\s([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*)$/gm.test(line);
     if (isInt) {
-      console.log('FOUND INT!! :', line);
       const wordsInLine = line.trim().split(/\s+/g);
-      console.log('FOUND INT!! SPLITED:', wordsInLine);
       const isConstNumHexa = /^(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*?$/gm.test(wordsInLine[1]);
       if (isConstNumHexa === true) {
-        console.log('FOUND INT!! INSIDE IS HEXA:', line);
         if (parseInt(wordsInLine[1], 16) > 255) {
           return line + ' -- ERROR: Constante numérica inválida';
         }
-        console.log('FOUND INT!! HEXAVALID:', line);
         this.addCSLineToTable(line);
         return line + ' LÍNEA VÁLIDA';
       } else {
-        console.log('FOUND INT!! OUTSIDE HEXA:', line);
         this.addCSLineToTable(line);
         return line + ' LÍNEA VÁLIDA';
       }
@@ -1143,7 +1065,6 @@ export class HomePage implements OnInit, AfterViewChecked {
     const isAnd = /^AND\s[^\s]+\s*,\s*[^\s]+\s*$/gm.test(line);
     if (isAnd) {
       const wordsInLine = line.trim().split(/\s+|,/g);
-      console.log('Words for ISAND', wordsInLine);
       if (wordsInLine.length > 3) {
         return `${line} -- ERROR: La instrucción AND solo puede tener 2 parámetros `;
       }
@@ -1189,12 +1110,10 @@ export class HomePage implements OnInit, AfterViewChecked {
     const isCmp = /^CMP\s[^\s]+\s*,\s*[^\s]+\s*$/gm.test(line);
     if (isCmp) {
       const wordsInLine = line.trim().split(/\s+|,/g);
-      console.log('Words for Cmp', wordsInLine);
       if (wordsInLine.length > 3) {
         return `${line} -- ERROR: La instrucción CMP solo puede tener 2 parámetros `;
       }
       const isMatch = wordsInLine[2].match(/^\[BP\+34\]$/gm);
-      console.log('ISMATCH RESULT: ', isMatch);
       if (this.isReg(wordsInLine[1])) {
         if (this.isReg(wordsInLine[2])) {
           return `${line} LÍNEA VÁLIDA`;
@@ -1237,7 +1156,6 @@ export class HomePage implements OnInit, AfterViewChecked {
     const isJnle = /^JNLE\s[^\s]+\s*$/gm.test(line);
     if (isJnle) {
       const wordsInLine = line.trim().split(/\s+|,/g);
-      console.log('Words for JNLE', wordsInLine);
       if (wordsInLine.length > 2) {
         return `${line} -- ERROR: La instrucción JNLE solo puede tener 1 parámetro `;
       }
@@ -1254,7 +1172,6 @@ export class HomePage implements OnInit, AfterViewChecked {
     const isJa = /^JA\s[^\s]+\s*$/gm.test(line);
     if (isJa) {
       const wordsInLine = line.trim().split(/\s+|,/g);
-      console.log('Words for JA', wordsInLine);
       if (wordsInLine.length > 2) {
         return `${line} -- ERROR: La instrucción JA solo puede tener 1 parámetro `;
       }
@@ -1282,10 +1199,8 @@ export class HomePage implements OnInit, AfterViewChecked {
       if (wordsInLine.length > 2) {
         return `${line} -- ERROR: Parámetros inesperados : ${wordsInLine.filter((w, index) => index !== 0 && w)}`;
       }
-      console.log(`${line} -- ERROR: Variable incorrecta`);
       return `${line} -- ERROR: Variable incorrecta`;
     }
-    console.log('In code segment, words are: ', wordsInLine);
     return line + ' linea incorrecta';
   }
 }
