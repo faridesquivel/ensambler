@@ -83,7 +83,7 @@
         </ion-row>
         <ion-row *ngFor="let lin of table" class="rows">
           <ion-col>
-            {{ lin && setHexAddress(lin.address) }}
+            {{ lin && (lin.type !== 'Constante' ? setHexAddress(lin.address) : '-') }}
           </ion-col>
           <ion-col>
             {{ lin && lin.symbol }}

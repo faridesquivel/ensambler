@@ -333,7 +333,7 @@ export class HomePage implements OnInit, AfterViewChecked {
   addToTable(symbol) {
     if (symbol.type === 'Constante') {
       this.table.push({
-        address: this.currentAddress.toString(16).toUpperCase(),
+        address: '',
         ...symbol
       });
     } else if (symbol.type === 'Variable') {
@@ -359,6 +359,8 @@ export class HomePage implements OnInit, AfterViewChecked {
         if (symbol.size === 'db') {
           if (this.isBinaryByte(symbol.value[0])) {
             valor = size * parseInt(symbol.value[0], 2);
+          } else if (symbol.value.length > 1 && this.isHexaWord(symbol.value[0])) {
+            valor = size * parseInt(symbol.value[0], 16);
           }
         } else {
           if (this.isBinaryWord(symbol.value[0])) {
@@ -386,6 +388,10 @@ export class HomePage implements OnInit, AfterViewChecked {
         } else {
           if (this.isBinaryWord(symbol.value[0])) {
             valor = size * parseInt(symbol.value[0], 2);
+          } else if (this.isHexaWord(symbol.value[0])) {
+            console.log('EL SYMBOL: ', symbol, ' ES HEXA WORD Y size es: ', size);
+            valor = size * parseInt(symbol.value[0], 16);
+            console.log('VALOR FINAL ES: ', valor);
           } else {
             valor = size * symbol.value[0];
           }
@@ -394,10 +400,10 @@ export class HomePage implements OnInit, AfterViewChecked {
       this.currentAddress += valor;
     } else if (symbol.type === 'Instrucción') {
       let valor;
-      this.table.push({
-        address: this.currentAddress.toString(16).toUpperCase(),
-        ...symbol
-      });
+      // this.table.push({
+      //   address: this.currentAddress.toString(16).toUpperCase(),
+      //   ...symbol
+      // });
       if (symbol.symbol.toUpperCase() === 'AAM') {
         valor = 2;
       } else if (symbol.symbol.toUpperCase() === 'CMPSB') {
@@ -415,7 +421,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       } else if (symbol.symbol.toUpperCase() === 'JA') {
         valor = 4;
       } else if (symbol.symbol.toUpperCase() === 'NOT') {
-        valor = 5;
+        valor = 4;
       } else if (symbol.symbol.toUpperCase() === 'AND') {
         valor = symbol.sum ? symbol.sum : 4;
       } else if (symbol.symbol.toUpperCase() === 'CMP') {
@@ -479,12 +485,15 @@ export class HomePage implements OnInit, AfterViewChecked {
       };
     } else {
       if (wordsInLine[1] === 'db') {
+        console.log('AQUI ESTA: ', untrimmedLine);
+        console.log('AQUI ESTA CON ARREGLO: ', wordsInLine);
         symbol = {
           symbol: wordsInLine[0],
           type: 'Variable',
           value: wordsInLine[3] ? [wordsInLine[2], wordsInLine[3]] : [wordsInLine[2]],
           size: wordsInLine[1]
         };
+        console.log('AQUI ESTA CON SYMBOLFINAL: ', symbol);
       } else if (wordsInLine[1] === 'dw') {
         symbol = {
           symbol: wordsInLine[0],
@@ -770,6 +779,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       return;
     }
     if (this.isCompound(line) === true) {
+      this.currentAddress = 0;
       if (this.mustEnd === true) {
         return line + ' -- Debe de contener un ends antes de abrir un nuevo segmento \n';
       } else {
@@ -781,7 +791,6 @@ export class HomePage implements OnInit, AfterViewChecked {
     if (this.isEnd(line)) {
       if (this.mustEnd === true) {
         this.mustEnd = false;
-        this.currentAddress = 0;
         return line + ' fin de segmento \n';
       } else {
         return line + ' -- Error: Para usar fin de segmento se necesita iniciar un segmento \n';
@@ -905,7 +914,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         return line + ' -- Error en: ' + wordsInLine[0] + ', el nombre de la variable es inválido';
       } else if (badSize === false) {
         return line + ' -- Error en: ' + wordsInLine[1] + ', el tamaño es inválido';
-      } else if (badConst === false) {
+      } else if (badWordConst === false) {
         return line + ' -- Error en: ' + wordsInLine[2] + ', constante inválida';
       } else if (badDup === false) {
         return line + ' -- Error en: ' + wordsInLine[3] + ', DUP inválida';
@@ -951,7 +960,7 @@ export class HomePage implements OnInit, AfterViewChecked {
     if (wordsInLine.length === 3) {
       const badSize = /^dw$/gm.test(wordsInLine[0]);
       const badConst = /("[^"]*"|'[^']*'|\d{1,5})/gm.test(wordsInLine[1]);
-      const badDup = /dup\(("[^"]*"\s*|'[^']*'\s*|\d{1,5})\)/gm.test(wordsInLine[1]);
+      const badDup = /dup\(("[^"]*"\s*|'[^']*'\s*|\d{1,5})\)/gm.test(wordsInLine[2]);
       if (badSize === false) {
         return line + ' -- Error en: ' + wordsInLine[0] + ' tamaño inválido';
       } else if (badConst === false) {
@@ -960,7 +969,8 @@ export class HomePage implements OnInit, AfterViewChecked {
         return line + ' -- Error en: ' + wordsInLine[2] + ' DUP inválido';
       }
     }
-    return line + ' LÍNEA INVÁLIDA';
+    this.addSSLineToTable(line);
+    return line + ' LÍNEA VÁLIDA';
   }
 
   analizaCodeSegment(line) {
@@ -1062,10 +1072,25 @@ export class HomePage implements OnInit, AfterViewChecked {
       return `${line} -- ERROR: El parámetro de la instrucción NOT es inválido, debe de contener un registro o memoria`;
     }
 
-    const isAnd = /^AND\s[^\s]+\s*,\s*[^\s]+\s*$/gm.test(line);
+    const isAnd = /^AND\s([^\s]+\s*,\s*[^\s]+\s*|WORD\sPTR\s[^\s]+\s*,\s*[^\s]+\s*)$/gm.test(line);
     if (isAnd) {
+      console.log('AND SE ENCONTRO: ', line);
       const wordsInLine = line.trim().split(/\s+|,/g);
       if (wordsInLine.length > 3) {
+        console.log('Words FOR AND: ', wordsInLine);
+        if (wordsInLine.length === 5) {
+          const symbol = {
+            symbol: wordsInLine[0],
+            type: 'Instrucción',
+            value: ['-'],
+            size: '-',
+            sum: 4
+          };
+          if (!this.contains(symbol)) {
+            this.addToTable(symbol);
+          }
+          return `${line} LÍNEA VÁLIDA`;
+        }
         return `${line} -- ERROR: La instrucción AND solo puede tener 2 parámetros `;
       }
       if (this.isReg(wordsInLine[1])) {
@@ -1084,6 +1109,16 @@ export class HomePage implements OnInit, AfterViewChecked {
           }
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isImmediateByte(wordsInLine[2])) {
+          const symbol = {
+            symbol: wordsInLine[0],
+            type: 'Instrucción',
+            value: ['-'],
+            size: '-',
+            sum: 4
+          };
+          if (!this.contains(symbol)) {
+            this.addToTable(symbol);
+          }
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
@@ -1107,6 +1142,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       }
       return `${line} -- ERROR: ${wordsInLine[1]} es un parámetro inválido`;
     }
+
     const isCmp = /^CMP\s[^\s]+\s*,\s*[^\s]+\s*$/gm.test(line);
     if (isCmp) {
       const wordsInLine = line.trim().split(/\s+|,/g);
@@ -1116,10 +1152,40 @@ export class HomePage implements OnInit, AfterViewChecked {
       const isMatch = wordsInLine[2].match(/^\[BP\+34\]$/gm);
       if (this.isReg(wordsInLine[1])) {
         if (this.isReg(wordsInLine[2])) {
+          const symbol = {
+            symbol: wordsInLine[0],
+            type: 'Instrucción',
+            value: ['-'],
+            size: '-',
+            sum: 4
+          };
+          if (!this.contains(symbol)) {
+            this.addToTable(symbol);
+          }
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isMemory(wordsInLine[2])) {
+          const symbol = {
+            symbol: wordsInLine[0],
+            type: 'Instrucción',
+            value: ['-'],
+            size: '-',
+            sum: 4
+          };
+          if (!this.contains(symbol)) {
+            this.addToTable(symbol);
+          }
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isImmediateByte(wordsInLine[2])) {
+          const symbol = {
+            symbol: wordsInLine[0],
+            type: 'Instrucción',
+            value: ['-'],
+            size: '-',
+            sum: 5
+          };
+          if (!this.contains(symbol)) {
+            this.addToTable(symbol);
+          }
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
@@ -1142,7 +1208,7 @@ export class HomePage implements OnInit, AfterViewChecked {
             type: 'Instrucción',
             value: ['-'],
             size: '-',
-            sum: 6
+            sum: 5
           };
           if (!this.contains(symbol)) {
             this.addToTable(symbol);
