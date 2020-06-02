@@ -156,6 +156,16 @@ export class HomePage implements OnInit, AfterViewChecked {
     return newAddress;
   }
 
+  setHexAddressWithH(add) {
+    const length = String(add).length;
+    let newAddress = '';
+    for (let index = 0; index < (4 - length); index++) {
+      newAddress += '0';
+    }
+    newAddress += add;
+    return newAddress + 'H';
+  }
+
   contains(obj) {
     // tslint:disable-next-line: prefer-for-of
     for (let index = 0; index < this.table.length; index++) {
@@ -553,6 +563,94 @@ export class HomePage implements OnInit, AfterViewChecked {
     }
   }
 
+  addCSCodeToCounter(line, index) {
+    const aam = /^(AAM)\s*?$/gm.test(line);
+    if (aam) {
+      this.counter[index].code = {
+        instruction: 'AAM',
+        opCode: [
+          { bin: '11010100', hex: parseInt('11010100', 2).toString(16).toUpperCase() },
+          { bin: '00001010', hex: parseInt('00001010', 2).toString(16).toUpperCase() }
+        ],
+        size: '2 BYTES'
+      };
+    }
+    const cmpsb = /^(CMPSB)\s*?$/gm.test(line);
+    if (cmpsb) {
+      this.counter[index].code = {
+        instruction: 'CMPSB',
+        opCode: [
+          { bin: '10100110', hex: parseInt('10100110', 2).toString(16).toUpperCase() }
+        ],
+        size: '2 BYTES'
+      };
+    }
+    const popf = /^(POPF)\s*?$/gm.test(line);
+    if (popf) {
+      this.counter[index].code = {
+        instruction: 'POPF',
+        opCode: [
+          { bin: '10011101', hex: parseInt('10011101', 2).toString(16).toUpperCase() }
+        ],
+        size: '1 BYTE'
+      };
+    }
+    const sti = /^(STI)\s*?$/gm.test(line);
+    if (sti) {
+      this.counter[index].code = {
+        instruction: 'STI',
+        opCode: [
+          { bin: '11111011', hex: parseInt('11111011', 2).toString(16).toUpperCase() }
+        ],
+        size: '1 BYTE'
+      };
+    }
+    const jnb = /^(JNB\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})\s*?$/gm.test(line);
+    if (jnb) {
+      this.counter[index].code = {
+        instruction: 'JNB',
+        opCode: [
+          { bin: '00001111', hex: parseInt('00001111', 2).toString(16).toUpperCase() },
+          { bin: '10000010', hex: parseInt('10000010', 2).toString(16).toUpperCase() }
+        ],
+        size: '2 BYTE'
+      };
+    }
+    const jg = /^(JG\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})\s*?$/gm.test(line);
+    if (jg) {
+      this.counter[index].code = {
+        instruction: 'JG',
+        opCode: [
+          { bin: '00001111', hex: parseInt('00001111', 2).toString(16).toUpperCase() },
+          { bin: '10001111', hex: parseInt('10001111', 2).toString(16).toUpperCase() }
+        ],
+        size: '2 BYTE'
+      };
+    }
+    const jnle = /^JNLE\s[^\s]+\s*$/gm.test(line);
+    if (jnle) {
+      this.counter[index].code = {
+        instruction: 'JNLE',
+        opCode: [
+          { bin: '00001111', hex: parseInt('00001111', 2).toString(16).toUpperCase() },
+          { bin: '10001111', hex: parseInt('10001111', 2).toString(16).toUpperCase() }
+        ],
+        size: '2 BYTE'
+      };
+    }
+    const ja = /^JA\s[^\s]+\s*$/gm.test(line);
+    if (ja) {
+      this.counter[index].code = {
+        instruction: 'JA',
+        opCode: [
+          { bin: '00001111', hex: parseInt('00001111', 2).toString(16).toUpperCase() },
+          { bin: '10000111', hex: parseInt('10000111', 2).toString(16).toUpperCase() }
+        ],
+        size: '2 BYTE'
+      };
+    }
+  }
+
   addCSLineToTable(untrimmedLine) {
     const wordsInLine = untrimmedLine.trim().split(/\s+/g);
     const isUniqueInstruction = /^(AAM|CMPSB|POPF|STI)$/gm.test(wordsInLine[0]);
@@ -644,21 +742,11 @@ export class HomePage implements OnInit, AfterViewChecked {
       return;
     }
     if (this.isCompound(word)) {
-      if (this.mustEndWord === true) {
-        return word + ' Debe de contener un ends antes de abrir un nuevo segmento';
-      } else {
-        this.mustEndWord = true;
-        this.currentSegment = word.valueOf();
-        return word + ' inicio de segmento';
-      }
+      this.currentSegment = word.valueOf();
+      return word + ' inicio de segmento';
     }
     if (this.isEnd(word)) {
-      if (this.mustEndWord === true) {
-        this.mustEndWord = false;
-        return word + ' fin de segmento';
-      } else {
-        return word + ' LÍNEA INVÁLIDA, para usar fin de segmento se necesita iniciar un segmento';
-      }
+      return word + ' fin de segmento';
     }
     if (this.currentSegment !== null) {
       if (this.currentSegment === 'code segment') {
@@ -766,9 +854,9 @@ export class HomePage implements OnInit, AfterViewChecked {
     return false;
   }
 
-  analizeLine(untrimmedLine, index) {
-    if (!this.containsAddress(index)) {
-      this.counter.push({ index, count: this.currentAddress.toString(16).toUpperCase() });
+  analizeLine(untrimmedLine, ind) {
+    if (!this.containsAddress(ind)) {
+      this.counter.push({ ind, count: this.currentAddress.toString(16).toUpperCase() });
     }
     const line = untrimmedLine.trim();
     if (this.isWhiteSpace(line)) {
@@ -813,7 +901,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       } else if (this.currentSegment === 'stack segment') {
         return this.analizaStackSegment(leftLine);
       } else if (this.currentSegment === 'code segment') {
-        return this.analizaCodeSegment(leftLine);
+        return this.analizaCodeSegment(leftLine, ind);
       }
     }
     return line + ' es correcta';
@@ -973,17 +1061,17 @@ export class HomePage implements OnInit, AfterViewChecked {
     return line + ' LÍNEA VÁLIDA';
   }
 
-  analizaCodeSegment(line) {
-    // const regex = line.matches("[a-zA-Z][a-zA-Z]+\\s(db|dw|equ),*\\s[A-Z][a-zA-Z]*");
-    const regex = /^(AAM|CMPSB|POPF|STI)\s*?$/gm.test(line);
+  analizaCodeSegment(line, ind) {
     const isTag = /^[a-zA-Z]{1}[a-zA-Z0-9]{0,9}:\s*?$/gm.test(line);
     if (isTag === true) {
       this.tags.push(line);
       this.addCSLineToTable(line);
       return line + ' linea válida';
     }
+    const regex = /^(AAM|CMPSB|POPF|STI)\s*?$/gm.test(line);
     if (regex === true) {
       this.addCSLineToTable(line);
+      this.addCSCodeToCounter(line, ind);
       return line + ' LÍNEA VÁLIDA';
     }
     const isJNBorJG = /^(JNB\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9}|JG\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})\s*?$/gm.test(line);
@@ -997,6 +1085,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         return `${line} -- Error: Parámetro inválido, ${wordsInLine[1]}`;
       }
       this.addCSLineToTable(line);
+      this.addCSCodeToCounter(line, ind);
       return line + ' LÍNEA VÁLIDA';
     }
     // tslint:disable-next-line: max-line-length
@@ -1230,6 +1319,7 @@ export class HomePage implements OnInit, AfterViewChecked {
           return `${line} -- Error: Parámetro inválido, ${wordsInLine[1]}`;
         }
         this.addCSLineToTable(line);
+        this.addCSCodeToCounter(line, ind);
         return `${line} LÍNEA VÁLIDA`;
       }
       return `${line} -- ERROR: ${wordsInLine[1]} es un parámetro inválido`;
@@ -1245,6 +1335,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         if (!this.tags.includes(wordsInLine[1] + ':')) {
           return `${line} -- Error: Parámetro inválido, ${wordsInLine[1]}`;
         }
+        this.addCSCodeToCounter(line, ind);
         this.addCSLineToTable(line);
         return `${line} LÍNEA VÁLIDA`;
       }

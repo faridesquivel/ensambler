@@ -4,6 +4,7 @@
       Ensamblador <br> 
       <span class="names">Erick Farid González Esquivel</span><br> 
       <span class="names">Sergio Martínez de Jesús</span><br>
+      <span class="version">Fase 4 1era revisión</span><br>
     </ion-title>
     <ion-buttons slot="end">
       <ion-button
@@ -52,11 +53,33 @@
     </ion-col>
     <ion-col size="6" class="midCol">
       <ion-card *ngIf="selectedFile" class="analizedCard">
-        <ion-card-header class="ion-text-center">
-          <strong>Análisis sintáctico</strong>
-        </ion-card-header>
         <ion-card-content class="cardWithOverflow" class="ion-justify-content-center">
-          <ion-text class="block" *ngFor="let line of allLines; let i = index">{{ (counter && counter[i]) && setHexAddress(counter[i].count) }} - {{ analizeLine(line, i) }}</ion-text>
+          <ion-grid class="tableGrid">
+            <ion-row class="header">
+              <ion-col>
+                Contador
+              </ion-col>
+              <ion-col>
+                Linea
+              </ion-col>
+              <ion-col>
+                Código
+              </ion-col>
+            </ion-row>
+            <ion-row *ngFor="let line of allLines; let i = index" class="rows">
+              <ion-col>
+                {{ (counter && counter[i]) && setHexAddress(counter[i].count) }}
+              </ion-col>
+              <ion-col>
+                {{ analizeLine(line, i) }}
+              </ion-col>
+              <ion-col>
+                <ion-text class="block">{{ (counter && counter[i] && counter[i].code) && (counter[i].code.instruction + ' - ' + counter[i].code.size ) }}</ion-text>
+                <ion-text class="block">{{ (counter && counter[i] && counter[i].code) && (counter[i].code.opCode[0].bin + ' - ' + setHexAddressWithH(counter[i].code.opCode[0].hex)) }}</ion-text>
+                <ion-text>{{ (counter && counter[i] && counter[i].code && counter[i].code.opCode[1]) && (counter[i].code.opCode[1].bin + ' - ' + setHexAddressWithH(counter[i].code.opCode[1].hex)) }}</ion-text>
+              </ion-col>
+            </ion-row>
+          </ion-grid>
         </ion-card-content>
       </ion-card>
     </ion-col>
