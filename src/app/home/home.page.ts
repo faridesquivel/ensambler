@@ -159,7 +159,7 @@ export class HomePage implements OnInit, AfterViewChecked {
   setHexAddressWithH(add) {
     const length = String(add).length;
     let newAddress = '';
-    for (let index = 0; index < (4 - length); index++) {
+    for (let index = 0; index < (2 - length); index++) {
       newAddress += '0';
     }
     newAddress += add;
@@ -339,6 +339,17 @@ export class HomePage implements OnInit, AfterViewChecked {
     return /^\s*$/gm.test(word);
   }
 
+  findTagInTable(tag) {
+    console.log('Will find tag in table', tag);
+    // tslint:disable-next-line: prefer-for-of
+    for (let index = 0; index < this.table.length; index++) {
+      if (this.table[index].symbol === (tag + ':')) {
+        console.log('Table[index] IS: ', this.table[index].symbol);
+        return this.table[index].address;
+      }
+    }
+    return -1;
+  }
 
   addToTable(symbol) {
     if (symbol.type === 'Constante') {
@@ -607,46 +618,58 @@ export class HomePage implements OnInit, AfterViewChecked {
     }
     const jnb = /^(JNB\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})\s*?$/gm.test(line);
     if (jnb) {
+      const wordsInLine = line.trim().split(/\s+/g);
+      const add = this.findTagInTable(wordsInLine[1]);
       this.counter[index].code = {
         instruction: 'JNB',
         opCode: [
           { bin: '00001111', hex: parseInt('00001111', 2).toString(16).toUpperCase() },
           { bin: '10000010', hex: parseInt('10000010', 2).toString(16).toUpperCase() }
         ],
-        size: '2 BYTE'
+        size: '2 BYTE',
+        jump: add === -1 ? 'NOT FOUND' : add
       };
     }
     const jg = /^(JG\s[a-zA-Z]{1}[a-zA-Z0-9]{0,9})\s*?$/gm.test(line);
     if (jg) {
+      const wordsInLine = line.trim().split(/\s+/g);
+      const add = this.findTagInTable(wordsInLine[1]);
       this.counter[index].code = {
         instruction: 'JG',
         opCode: [
           { bin: '00001111', hex: parseInt('00001111', 2).toString(16).toUpperCase() },
           { bin: '10001111', hex: parseInt('10001111', 2).toString(16).toUpperCase() }
         ],
-        size: '2 BYTE'
+        size: '2 BYTE',
+        jump: add === -1 ? 'NOT FOUND' : add
       };
     }
     const jnle = /^JNLE\s[^\s]+\s*$/gm.test(line);
     if (jnle) {
+      const wordsInLine = line.trim().split(/\s+/g);
+      const add = this.findTagInTable(wordsInLine[1]);
       this.counter[index].code = {
         instruction: 'JNLE',
         opCode: [
           { bin: '00001111', hex: parseInt('00001111', 2).toString(16).toUpperCase() },
           { bin: '10001111', hex: parseInt('10001111', 2).toString(16).toUpperCase() }
         ],
-        size: '2 BYTE'
+        size: '2 BYTE',
+        jump: add === -1 ? 'NOT FOUND' : add
       };
     }
     const ja = /^JA\s[^\s]+\s*$/gm.test(line);
     if (ja) {
+      const wordsInLine = line.trim().split(/\s+/g);
+      const add = this.findTagInTable(wordsInLine[1]);
       this.counter[index].code = {
         instruction: 'JA',
         opCode: [
           { bin: '00001111', hex: parseInt('00001111', 2).toString(16).toUpperCase() },
           { bin: '10000111', hex: parseInt('10000111', 2).toString(16).toUpperCase() }
         ],
-        size: '2 BYTE'
+        size: '2 BYTE',
+        jump: add === -1 ? 'NOT FOUND' : add
       };
     }
   }
