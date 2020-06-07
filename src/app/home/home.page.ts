@@ -688,7 +688,7 @@ export class HomePage implements OnInit, AfterViewChecked {
     }
   }
 
-  addCSCodeToCounter(line, index) {
+  addCSCodeToCounter(line, index, type?) {
     const aam = /^(AAM)\s*?$/gm.test(line);
     if (aam) {
       this.counter[index].code = {
@@ -830,6 +830,24 @@ export class HomePage implements OnInit, AfterViewChecked {
         },
         desp: 2
       };
+    }
+    if (type && type === 'AND5') {
+      return;
+    }
+    if (type && type === 'ANDRR') {
+      return;
+    }
+    if (type && type === 'ANDRM') {
+      return;
+    }
+    if (type && type === 'ANDRI') {
+      return;
+    }
+    if (type && type === 'ANDMR') {
+      return;
+    }
+    if (type && type === 'ANDMI') {
+      return;
     }
   }
 
@@ -1364,12 +1382,14 @@ export class HomePage implements OnInit, AfterViewChecked {
           if (!this.contains(symbol)) {
             this.addToTable(symbol);
           }
+          this.addCSCodeToCounter(line, ind, 'AND5');
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: La instrucción AND solo puede tener 2 parámetros `;
       }
       if (this.isReg(wordsInLine[1])) {
         if (this.isReg(wordsInLine[2])) {
+          this.addCSCodeToCounter(line, ind, 'ANDRR');
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isMemory(wordsInLine[2])) {
           const symbol = {
@@ -1382,6 +1402,7 @@ export class HomePage implements OnInit, AfterViewChecked {
           if (!this.contains(symbol)) {
             this.addToTable(symbol);
           }
+          this.addCSCodeToCounter(line, ind, 'ANDRM');
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isImmediateByte(wordsInLine[2])) {
           const symbol = {
@@ -1394,6 +1415,7 @@ export class HomePage implements OnInit, AfterViewChecked {
           if (!this.contains(symbol)) {
             this.addToTable(symbol);
           }
+          this.addCSCodeToCounter(line, ind, 'ANDRI');
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
@@ -1409,8 +1431,10 @@ export class HomePage implements OnInit, AfterViewChecked {
           if (!this.contains(symbol)) {
             this.addToTable(symbol);
           }
+          this.addCSCodeToCounter(line, ind, 'ANDMR');
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isImmediateByte(wordsInLine[2])) {
+          this.addCSCodeToCounter(line, ind, 'ANDMI');
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
