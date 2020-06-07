@@ -46,97 +46,113 @@ export class HomePage implements OnInit, AfterViewChecked {
       value: 'AX',
       mod: '11',
       rm: '000',
-      w: 1
+      w: 1,
+      reg: '000'
     },
     {
       value: 'AL',
       mod: '11',
       rm: '000',
-      w: 0
+      w: 0,
+      reg: '000'
     },
     {
       value: 'CX',
       mod: '11',
       rm: '001',
-      w: 1
+      w: 1,
+      reg: '001'
     },
     {
       value: 'CL',
       mod: '11',
       rm: '001',
-      w: 0
+      w: 0,
+      reg: '001'
     },
     {
       value: 'DX',
       mod: '11',
       rm: '010',
-      w: 1
+      w: 1,
+      reg: '010'
     },
     {
       value: 'DL',
       mod: '11',
       rm: '010',
-      w: 0
+      w: 0,
+      reg: '010'
     },
     {
       value: 'BX',
       mod: '11',
       rm: '011',
-      w: 1
+      w: 1,
+      reg: '011'
     },
     {
       value: 'BL',
       mod: '11',
       rm: '011',
-      w: 0
+      w: 0,
+      reg: '011'
     },
     {
       value: 'SP',
       mod: '11',
       rm: '100',
-      w: 1
+      w: 1,
+      reg: '100'
     },
     {
       value: 'AH',
       mod: '11',
       rm: '100',
-      w: 0
+      w: 0,
+      reg: '100'
     },
     {
       value: 'BP',
       mod: '11',
       rm: '101',
-      w: 1
+      w: 1,
+      reg: '101'
     },
     {
       value: 'CH',
       mod: '11',
       rm: '101',
-      w: 0
+      w: 0,
+      reg: '101'
     },
     {
       value: 'SI',
       mod: '11',
       rm: '110',
-      w: 1
+      w: 1,
+      reg: '110'
     },
     {
       value: 'DH',
       mod: '11',
       rm: '110',
-      w: 0
+      w: 0,
+      reg: '110'
     },
     {
       value: 'DI',
       mod: '11',
       rm: '111',
-      w: 1
+      w: 1,
+      reg: '111'
     },
     {
       value: 'BH',
       mod: '11',
       rm: '111',
-      w: 0
+      w: 0,
+      reg: '111'
     },
   ];
 
@@ -262,7 +278,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       newAddress += '0';
     }
     newAddress += add;
-    return newAddress + 'H';
+    return newAddress + 'h';
   }
 
   contains(obj) {
@@ -334,6 +350,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       value: 'VAR',
       mod: '00',
       rm: '110',
+      reg: '',
       w: 0
     };
   }
@@ -790,13 +807,13 @@ export class HomePage implements OnInit, AfterViewChecked {
     const int = /^INT\s([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*)$/gm.test(line);
     if (int) {
       const wordsInLine = line.trim().split(/\s+/g);
-      const despValue = wordsInLine[1].substring(0, String((wordsInLine[1].length - 1)));
+      const inme = wordsInLine[1];
       this.counter[index].code = {
         instruction: 'INT',
         opCode: [
           { bin: '11001101', hex: parseInt('11001101', 2).toString(16).toUpperCase() }
         ],
-        desp: despValue
+        inm: inme
       };
     }
     const notWReg = /^NOT\s((A|B|C|D|S)(X|H|L|I|P))\s*$/gm.test(line);
@@ -818,11 +835,10 @@ export class HomePage implements OnInit, AfterViewChecked {
     const notWM = /^NOT\s[^\s]*\s*$/gm.test(line);
     if (notWM) {
       const wordsInLine = line.trim().split(/\s+/g);
-      const sizeValue = wordsInLine[1].substring(0, String((wordsInLine[1].length - 1)));
       this.counter[index].code = {
         instruction: 'NOT',
         opCode: [
-          { bin: '11110110', hex: parseInt('11110110', 2).toString(16).toUpperCase() }
+          { bin: '11110111', hex: parseInt('11110111', 2).toString(16).toUpperCase() }
         ],
         address: {
           bin: '00010110',
@@ -832,21 +848,131 @@ export class HomePage implements OnInit, AfterViewChecked {
       };
     }
     if (type && type === 'AND5') {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      const modValues = this.getModRMWValue(wordsInLine[4]);
+      this.counter[index].code = {
+        instruction: 'AND',
+        opCode: [
+          { bin: ('0010000' + modValues.w), hex: parseInt(('0010000' + modValues.w), 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: modValues.mod + modValues.reg + modValues.rm,
+          hex: parseInt((modValues.mod + modValues.reg + modValues.rm), 2).toString(16).toUpperCase()
+        },
+        desp: 2
+      };
       return;
     }
     if (type && type === 'ANDRR') {
       return;
     }
     if (type && type === 'ANDRM') {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      const modValues = this.getModRMWValue(wordsInLine[1]);
+      this.counter[index].code = {
+        instruction: 'AND',
+        opCode: [
+          { bin: ('0010001' + modValues.w), hex: parseInt(('0010001' + modValues.w), 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: modValues.mod + modValues.reg + modValues.rm,
+          hex: parseInt((modValues.mod + modValues.reg + modValues.rm), 2).toString(16).toUpperCase()
+        },
+        desp: 2
+      };
       return;
     }
     if (type && type === 'ANDRI') {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      const modValues = this.getModRMWValue(wordsInLine[1]);
+      const inme = wordsInLine[2];
+      this.counter[index].code = {
+        instruction: 'AND',
+        opCode: [
+          { bin: ('1000000' + modValues.w), hex: parseInt(('1000000' + modValues.w), 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: modValues.mod + '100' + modValues.rm,
+          hex: parseInt((modValues.mod + '100' + modValues.rm), 2).toString(16).toUpperCase()
+        },
+        inm: inme
+      };
       return;
     }
     if (type && type === 'ANDMR') {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      const modValues = this.getModRMWValue(wordsInLine[1]);
+      this.counter[index].code = {
+        instruction: 'AND',
+        opCode: [
+          { bin: ('0010001' + modValues.w), hex: parseInt(('0010001' + modValues.w), 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: modValues.mod + modValues.reg + modValues.rm,
+          hex: parseInt((modValues.mod + modValues.reg + modValues.rm), 2).toString(16).toUpperCase()
+        },
+        desp: 2
+      };
       return;
     }
     if (type && type === 'ANDMI') {
+      return;
+    }
+    if (type && type === 'CMPRR') {
+      return;
+    }
+    if (type && type === 'CMPRM') {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      const modValues = this.getModRMWValue(wordsInLine[1]);
+      this.counter[index].code = {
+        instruction: 'CMP',
+        opCode: [
+          { bin: ('0011101' + modValues.w), hex: parseInt(('0011101' + modValues.w), 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: modValues.mod + modValues.reg + modValues.rm,
+          hex: parseInt((modValues.mod + modValues.reg + modValues.rm), 2).toString(16).toUpperCase()
+        },
+        desp: 2
+      };
+      return;
+    }
+    if (type && type === 'CMPRI') {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      const modValues = this.getModRMWValue(wordsInLine[1]);
+      const inme = wordsInLine[2];
+      this.counter[index].code = {
+        instruction: 'CMP',
+        opCode: [
+          { bin: ('1000001' + modValues.w), hex: parseInt(('1000001' + modValues.w), 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: modValues.mod + '111' + modValues.rm,
+          hex: parseInt((modValues.mod + '111' + modValues.rm), 2).toString(16).toUpperCase()
+        },
+        inm: inme
+      };
+      return;
+    }
+    if (type && type === 'CMPMR') {
+      return;
+    }
+    if (type && type === 'CMPMI') {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      const modValues = this.getModRMWValue(wordsInLine[1]);
+      const inme = wordsInLine[2];
+      this.counter[index].code = {
+        instruction: 'CMP',
+        opCode: [
+          { bin: ('1000001' + modValues.w), hex: parseInt(('1000001' + modValues.w), 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: modValues.mod + '111' + modValues.rm,
+          hex: parseInt((modValues.mod + '111' + modValues.rm), 2).toString(16).toUpperCase()
+        },
+        desp: 2,
+        inm: inme
+      };
       return;
     }
   }
@@ -1461,6 +1587,7 @@ export class HomePage implements OnInit, AfterViewChecked {
           if (!this.contains(symbol)) {
             this.addToTable(symbol);
           }
+          this.addCSCodeToCounter(line, ind, 'CMPRR');
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isMemory(wordsInLine[2])) {
           const symbol = {
@@ -1473,6 +1600,7 @@ export class HomePage implements OnInit, AfterViewChecked {
           if (!this.contains(symbol)) {
             this.addToTable(symbol);
           }
+          this.addCSCodeToCounter(line, ind, 'CMPRM');
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isImmediateByte(wordsInLine[2])) {
           const symbol = {
@@ -1485,6 +1613,7 @@ export class HomePage implements OnInit, AfterViewChecked {
           if (!this.contains(symbol)) {
             this.addToTable(symbol);
           }
+          this.addCSCodeToCounter(line, ind, 'CMPRI');
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;
@@ -1500,6 +1629,7 @@ export class HomePage implements OnInit, AfterViewChecked {
           if (!this.contains(symbol)) {
             this.addToTable(symbol);
           }
+          this.addCSCodeToCounter(line, ind, 'CMPMR');
           return `${line} LÍNEA VÁLIDA`;
         } else if (this.isImmediateByte(wordsInLine[2])) {
           const symbol = {
@@ -1512,6 +1642,7 @@ export class HomePage implements OnInit, AfterViewChecked {
           if (!this.contains(symbol)) {
             this.addToTable(symbol);
           }
+          this.addCSCodeToCounter(line, ind, 'CMPMI');
           return `${line} LÍNEA VÁLIDA`;
         }
         return `${line} -- ERROR: ${wordsInLine[2]} es un parámetro inválido`;

@@ -78,8 +78,9 @@
                 <ion-text>{{ (counter && counter[i] && counter[i].code && counter[i].code.opCode[1]) && (counter[i].code.opCode[1].bin + ' - ' + setHexAddressWithH(counter[i].code.opCode[1].hex)) }}</ion-text>
                 <ion-text class="block">{{ (counter && counter[i] && counter[i].code && counter[i].code.jump) && ('SALTO A: ' + setHexAddress(counter[i].code.jump)) + 'h' }}</ion-text>
                 <ion-text class="block">{{ (counter && counter[i] && counter[i].code) && (counter[i].code.size ) }}</ion-text>
-                <ion-text class="block">{{ (counter && counter[i] && counter[i].code && counter[i].desp) && (counter[i].code.desp ) }}</ion-text>
                 <ion-text class="block">{{ (counter && counter[i] && counter[i].code && counter[i].code.address) && (counter[i].code.address.bin + ' - ' + (counter[i].code.address.hex + 'h')) }}</ion-text>
+                <ion-text class="block">{{ (counter && counter[i] && counter[i].code && counter[i].code.desp) && ('DESP: ' + counter[i].code.desp ) }}</ion-text>
+                <ion-text class="block">{{ (counter && counter[i] && counter[i].code && counter[i].code.inm) && ('INM: ' + counter[i].code.inm ) }}</ion-text>
               </ion-col>
             </ion-row>
           </ion-grid>
