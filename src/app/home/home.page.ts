@@ -41,6 +41,105 @@ export class HomePage implements OnInit, AfterViewChecked {
   tags = [];
   wordTags = [];
 
+  modRMWvalues = [
+    {
+      value: 'AX',
+      mod: '11',
+      rm: '000',
+      w: 1
+    },
+    {
+      value: 'AL',
+      mod: '11',
+      rm: '000',
+      w: 0
+    },
+    {
+      value: 'CX',
+      mod: '11',
+      rm: '001',
+      w: 1
+    },
+    {
+      value: 'CL',
+      mod: '11',
+      rm: '001',
+      w: 0
+    },
+    {
+      value: 'DX',
+      mod: '11',
+      rm: '010',
+      w: 1
+    },
+    {
+      value: 'DL',
+      mod: '11',
+      rm: '010',
+      w: 0
+    },
+    {
+      value: 'BX',
+      mod: '11',
+      rm: '011',
+      w: 1
+    },
+    {
+      value: 'BL',
+      mod: '11',
+      rm: '011',
+      w: 0
+    },
+    {
+      value: 'SP',
+      mod: '11',
+      rm: '100',
+      w: 1
+    },
+    {
+      value: 'AH',
+      mod: '11',
+      rm: '100',
+      w: 0
+    },
+    {
+      value: 'BP',
+      mod: '11',
+      rm: '101',
+      w: 1
+    },
+    {
+      value: 'CH',
+      mod: '11',
+      rm: '101',
+      w: 0
+    },
+    {
+      value: 'SI',
+      mod: '11',
+      rm: '110',
+      w: 1
+    },
+    {
+      value: 'DH',
+      mod: '11',
+      rm: '110',
+      w: 0
+    },
+    {
+      value: 'DI',
+      mod: '11',
+      rm: '111',
+      w: 1
+    },
+    {
+      value: 'BH',
+      mod: '11',
+      rm: '111',
+      w: 0
+    },
+  ];
+
   constructor(private cdRef: ChangeDetectorRef) {}
 
   ngOnInit() {
@@ -222,6 +321,21 @@ export class HomePage implements OnInit, AfterViewChecked {
       isValidHexa = parseInt(word, 16) < 65536;
     }
     return isConstNumByte || isConstNumBytePositive || isConstNumByteNegative || (isConstNumHexa && isValidHexa) || isImmediateWord;
+  }
+
+  getModRMWValue(reg) {
+    // tslint:disable-next-line: prefer-for-of
+    for (let index = 0; index < this.modRMWvalues.length; index++) {
+      if (this.modRMWvalues[index].value === reg.toUpperCase()) {
+        return this.modRMWvalues[index];
+      }
+    }
+    return {
+      value: 'VAR',
+      mod: '00',
+      rm: '110',
+      w: 0
+    };
   }
 
   isImmediateByte(word) {
@@ -670,6 +784,51 @@ export class HomePage implements OnInit, AfterViewChecked {
         ],
         size: '2 BYTE',
         jump: add === -1 ? 'NOT FOUND' : add
+      };
+    }
+    // tslint:disable-next-line: max-line-length
+    const int = /^INT\s([-+]?([1-9] | [1-9] [0-9] | 1 [01] [0-9] | 12 [0-7])|0|[0-2]?[0-5]?[0-5]|(([a-fA-F0–9]{6}|[a-fA-F0–9]{3}|[0-9a-fA-F]{2,6})|0x[0-9a-fA-F]{1,4})(h|H)?\s*)$/gm.test(line);
+    if (int) {
+      const wordsInLine = line.trim().split(/\s+/g);
+      const despValue = wordsInLine[1].substring(0, String((wordsInLine[1].length - 1)));
+      this.counter[index].code = {
+        instruction: 'INT',
+        opCode: [
+          { bin: '11001101', hex: parseInt('11001101', 2).toString(16).toUpperCase() }
+        ],
+        desp: despValue
+      };
+    }
+    const notWReg = /^NOT\s((A|B|C|D|S)(X|H|L|I|P))\s*$/gm.test(line);
+    if (notWReg) {
+      const wordsInLine = line.trim().split(/\s+/g);
+      const modValues = this.getModRMWValue(wordsInLine[1]);
+      this.counter[index].code = {
+        instruction: 'NOT',
+        opCode: [
+          { bin: '1111011' + modValues.w, hex: parseInt('1111011' + modValues.w, 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: modValues.mod + '010' + modValues.rm,
+          hex: parseInt((modValues.mod + '010' + modValues.rm), 2).toString(16).toUpperCase()
+        }
+      };
+      return;
+    }
+    const notWM = /^NOT\s[^\s]*\s*$/gm.test(line);
+    if (notWM) {
+      const wordsInLine = line.trim().split(/\s+/g);
+      const sizeValue = wordsInLine[1].substring(0, String((wordsInLine[1].length - 1)));
+      this.counter[index].code = {
+        instruction: 'NOT',
+        opCode: [
+          { bin: '11110110', hex: parseInt('11110110', 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: '00010110',
+          hex: parseInt('00010110', 2).toString(16).toUpperCase()
+        },
+        desp: 2
       };
     }
   }
@@ -1121,9 +1280,11 @@ export class HomePage implements OnInit, AfterViewChecked {
           return line + ' -- ERROR: Constante numérica inválida';
         }
         this.addCSLineToTable(line);
+        this.addCSCodeToCounter(line, ind);
         return line + ' LÍNEA VÁLIDA';
       } else {
         this.addCSLineToTable(line);
+        this.addCSCodeToCounter(line, ind);
         return line + ' LÍNEA VÁLIDA';
       }
     }
@@ -1141,6 +1302,7 @@ export class HomePage implements OnInit, AfterViewChecked {
       if (!this.contains(symbol)) {
         this.addToTable(symbol);
       }
+      this.addCSCodeToCounter(line, ind);
       return line + ' LÍNEA VÁLIDA';
     }
 
@@ -1167,6 +1329,7 @@ export class HomePage implements OnInit, AfterViewChecked {
         if (!this.contains(symbol)) {
           this.addToTable(symbol);
         }
+        this.addCSCodeToCounter(line, ind);
         return `${line} LÍNEA VÁLIDA`;
       }
       if (this.isMemory(wordsInLine[1])) {
