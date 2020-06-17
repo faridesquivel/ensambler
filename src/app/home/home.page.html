@@ -4,7 +4,7 @@
       Ensamblador <br> 
       <span class="names">Erick Farid González Esquivel</span><br> 
       <span class="names">Sergio Martínez de Jesús</span><br>
-      <span class="version">Fase 4 1era revisión</span><br>
+      <span class="version">Fase 4 revisión final</span><br>
     </ion-title>
     <ion-buttons slot="end">
       <ion-button
@@ -78,7 +78,7 @@
                 <ion-text>{{ (counter && counter[i] && counter[i].code && counter[i].code.opCode[1]) && (counter[i].code.opCode[1].bin + ' - ' + setHexAddressWithH(counter[i].code.opCode[1].hex)) }}</ion-text>
                 <ion-text class="block">{{ (counter && counter[i] && counter[i].code && counter[i].code.jump) && ('SALTO A: ' + setHexAddress(counter[i].code.jump)) + 'h' }}</ion-text>
                 <ion-text class="block">{{ (counter && counter[i] && counter[i].code) && (counter[i].code.size ) }}</ion-text>
-                <ion-text class="block">{{ (counter && counter[i] && counter[i].code && counter[i].code.address) && (counter[i].code.address.bin + ' - ' + (counter[i].code.address.hex + 'h')) }}</ion-text>
+                <ion-text class="block">{{ (counter && counter[i] && counter[i].code && counter[i].code.address) && (counter[i].code.address.bin + ' - ' + setHexAddressWithH(counter[i].code.address.hex)) }}</ion-text>
                 <ion-text class="block">{{ (counter && counter[i] && counter[i].code && counter[i].code.desp) && ('DESP: ' + counter[i].code.desp ) }}</ion-text>
                 <ion-text class="block">{{ (counter && counter[i] && counter[i].code && counter[i].code.inm) && ('INM: ' + counter[i].code.inm ) }}</ion-text>
               </ion-col>

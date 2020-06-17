@@ -40,7 +40,6 @@ export class HomePage implements OnInit, AfterViewChecked {
   table = [];
   tags = [];
   wordTags = [];
-
   modRMWvalues = [
     {
       value: 'AX',
@@ -274,6 +273,7 @@ export class HomePage implements OnInit, AfterViewChecked {
   setHexAddressWithH(add) {
     const length = String(add).length;
     let newAddress = '';
+    console.log('Will set Hex for ADD', add);
     for (let index = 0; index < (2 - length); index++) {
       newAddress += '0';
     }
@@ -295,6 +295,18 @@ export class HomePage implements OnInit, AfterViewChecked {
       }
     }
     return false;
+  }
+
+  getMemoryDir(inputVar) {
+    // tslint:disable-next-line: prefer-for-of
+    for (let index = 0; index < this.table.length; index++) {
+      if (this.table[index].symbol.toLowerCase() === inputVar.toLowerCase()) {
+        if ((String(this.table[index].address).length % 2) !== 0) {
+          return '0' + this.table[index].address;
+        }
+        return this.table[index].address;
+      }
+    }
   }
 
   lineIsContained(obj) {
@@ -347,9 +359,9 @@ export class HomePage implements OnInit, AfterViewChecked {
       }
     }
     return {
-      value: 'VAR',
-      mod: '00',
-      rm: '110',
+      value: 'MEM',
+      mod: '10',
+      rm: '010',
       reg: '',
       w: 0
     };
@@ -388,7 +400,7 @@ export class HomePage implements OnInit, AfterViewChecked {
   }
 
   isBinaryWord(word) {
-    const isBinary = /^[0-1]{0, 16}(b|B)?$/gm.test(word);
+    const isBinary = /^[0-1]{0,16}(b|B)?$/gm.test(word);
     return isBinary;
   }
 
@@ -835,6 +847,8 @@ export class HomePage implements OnInit, AfterViewChecked {
     const notWM = /^NOT\s[^\s]*\s*$/gm.test(line);
     if (notWM) {
       const wordsInLine = line.trim().split(/\s+/g);
+      const inme = this.getMemoryDir(wordsInLine[1]);
+      const dividedInme = inme.match(/.{1,2}/g).reverse();
       this.counter[index].code = {
         instruction: 'NOT',
         opCode: [
@@ -844,31 +858,31 @@ export class HomePage implements OnInit, AfterViewChecked {
           bin: '00010110',
           hex: parseInt('00010110', 2).toString(16).toUpperCase()
         },
-        desp: 2
+        desp: dividedInme
       };
     }
     if (type && type === 'AND5') {
       const wordsInLine = line.trim().split(/\s+|,/g);
-      const modValues = this.getModRMWValue(wordsInLine[4]);
+      const regValues = this.getModRMWValue(wordsInLine[4]);
+      const modValues = this.getModRMWValue(wordsInLine[3]);
+      const despla = ['00', '01']
       this.counter[index].code = {
         instruction: 'AND',
         opCode: [
-          { bin: ('0010000' + modValues.w), hex: parseInt(('0010000' + modValues.w), 2).toString(16).toUpperCase() }
+          { bin: ('0010000' + regValues.w), hex: parseInt(('0010000' + regValues.w), 2).toString(16).toUpperCase() }
         ],
         address: {
-          bin: modValues.mod + modValues.reg + modValues.rm,
-          hex: parseInt((modValues.mod + modValues.reg + modValues.rm), 2).toString(16).toUpperCase()
+          bin: modValues.mod + regValues.reg + modValues.rm,
+          hex: parseInt((modValues.mod + regValues.reg + modValues.rm), 2).toString(16).toUpperCase()
         },
-        desp: 2
+        desp: despla
       };
       return;
     }
     if (type && type === 'ANDRR') {
-      return;
-    }
-    if (type && type === 'ANDRM') {
       const wordsInLine = line.trim().split(/\s+|,/g);
-      const modValues = this.getModRMWValue(wordsInLine[1]);
+      const regValues = this.getModRMWValue(wordsInLine[1]);
+      const modValues = this.getModRMWValue(wordsInLine[2]);
       this.counter[index].code = {
         instruction: 'AND',
         opCode: [
@@ -876,9 +890,25 @@ export class HomePage implements OnInit, AfterViewChecked {
         ],
         address: {
           bin: modValues.mod + modValues.reg + modValues.rm,
-          hex: parseInt((modValues.mod + modValues.reg + modValues.rm), 2).toString(16).toUpperCase()
+          hex: parseInt((modValues.mod + regValues.reg + modValues.rm), 2).toString(16).toUpperCase()
+        }
+      };
+      return;
+    }
+    if (type && type === 'ANDRM') {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      const modValues = this.getModRMWValue(wordsInLine[1]);
+      const despla = ['11', '00'];
+      this.counter[index].code = {
+        instruction: 'AND',
+        opCode: [
+          { bin: ('0010001' + modValues.w), hex: parseInt(('0010001' + modValues.w), 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: '00' + modValues.reg + '110',
+          hex: parseInt(('00' + modValues.reg + '110'), 2).toString(16).toUpperCase()
         },
-        desp: 2
+        desp: despla
       };
       return;
     }
@@ -919,6 +949,19 @@ export class HomePage implements OnInit, AfterViewChecked {
       return;
     }
     if (type && type === 'CMPRR') {
+      const wordsInLine = line.trim().split(/\s+|,/g);
+      const regValues = this.getModRMWValue(wordsInLine[1]);
+      const modValues = this.getModRMWValue(wordsInLine[2]);
+      this.counter[index].code = {
+        instruction: 'CMP',
+        opCode: [
+          { bin: ('0011101' + modValues.w), hex: parseInt(('0011101' + modValues.w), 2).toString(16).toUpperCase() }
+        ],
+        address: {
+          bin: modValues.mod + modValues.reg + modValues.rm,
+          hex: parseInt((modValues.mod + regValues.reg + modValues.rm), 2).toString(16).toUpperCase()
+        }
+      };
       return;
     }
     if (type && type === 'CMPRM') {
@@ -944,13 +987,13 @@ export class HomePage implements OnInit, AfterViewChecked {
       this.counter[index].code = {
         instruction: 'CMP',
         opCode: [
-          { bin: ('1000001' + modValues.w), hex: parseInt(('1000001' + modValues.w), 2).toString(16).toUpperCase() }
+          { bin: ('1000000' + modValues.w), hex: parseInt(('1000000' + modValues.w), 2).toString(16).toUpperCase() }
         ],
         address: {
           bin: modValues.mod + '111' + modValues.rm,
           hex: parseInt((modValues.mod + '111' + modValues.rm), 2).toString(16).toUpperCase()
         },
-        inm: inme
+        inm: parseInt(inme, 10).toString(16).toUpperCase()
       };
       return;
     }
@@ -960,17 +1003,27 @@ export class HomePage implements OnInit, AfterViewChecked {
     if (type && type === 'CMPMI') {
       const wordsInLine = line.trim().split(/\s+|,/g);
       const modValues = this.getModRMWValue(wordsInLine[1]);
-      const inme = wordsInLine[2];
+      const addre = this.getMemoryDir(wordsInLine[1]);
+      let newAdd = '';
+      for (let i = 0; i < 4 - String(addre).length; i++) {
+        newAdd += '0';
+      }
+      newAdd += addre;
+      const dividedAdd = newAdd.match(/.{1,2}/g).reverse();
+      let inme = wordsInLine[2];
+      if (this.isBinaryWord(wordsInLine[2])) {
+        inme = parseInt(wordsInLine[2], 2).toString(16).toUpperCase();
+      }
       this.counter[index].code = {
         instruction: 'CMP',
         opCode: [
-          { bin: ('1000001' + modValues.w), hex: parseInt(('1000001' + modValues.w), 2).toString(16).toUpperCase() }
+          { bin: ('1000000' + modValues.w), hex: parseInt(('1000000' + modValues.w), 2).toString(16).toUpperCase() }
         ],
         address: {
           bin: modValues.mod + '111' + modValues.rm,
           hex: parseInt((modValues.mod + '111' + modValues.rm), 2).toString(16).toUpperCase()
         },
-        desp: 2,
+        desp: dividedAdd,
         inm: inme
       };
       return;
